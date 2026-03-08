@@ -1,23 +1,44 @@
 {
   "manifest_version": 3,
   "name": "Survev.io Controller",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Full controller support for Survev.io with customizable keybinds.",
+
   "icons": {
+    "128": "assets/icon128.png",
     "512": "assets/icon128.png"
   },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "survev-controller@example.com",
+      "strict_min_version": "109.0"
+    }
+  },
+
+  "permissions": ["activeTab"],
+
   "content_scripts": [
     {
-      "matches": ["*://survev.io/*"],
+      "matches": [
+        "*://survev.io/*",
+        "*://*.survev.io/*"
+      ],
       "js": ["content.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
     }
   ],
+
   "web_accessible_resources": [
     {
-      "resources": ["assets/*"],
-      "matches": ["*://survev.io/*"]
+      "resources": [
+        "assets/*"
+      ],
+      "matches": [
+        "*://survev.io/*",
+        "*://*.survev.io/*"
+      ]
     }
   ]
 }
