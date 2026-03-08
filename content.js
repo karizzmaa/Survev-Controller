@@ -5,10 +5,8 @@
   "use strict";
 
   // ---------- controller type stuff ----------
-  // had to figure out all these vendor ids myself, took way too long
-  // IMPORTANT: if ur controller isnt detected add the vendor id here
   function getControllerType(id) {
-    if (!id) return "ps"; // default to ps idk
+    if (!id) return "ps";
     const low = id.toLowerCase();
     if (low.includes("xbox") || low.includes("xinput") || low.includes("045e"))
       return "xbox";
@@ -27,7 +25,6 @@
 
   let controllerType = "ps";
 
-  // ps names - DONT TOUCH these indices they match the gamepad api exactly
   const PS_BUTTON_NAMES = {
     0: "✕ Cross",
     1: "○ Circle",
@@ -47,7 +44,6 @@
     15: "→ D-Pad",
     16: "PS Button",
   };
-  // xbox names - same deal
   const XBOX_BUTTON_NAMES = {
     0: "A",
     1: "B",
@@ -74,45 +70,87 @@
     return names[idx] !== undefined ? names[idx] : "Btn " + idx;
   }
 
-  // badge defs for the menu buttons
-  const PS_BADGE_DEFS = [
-    { id: "btn-start-mode-0", badgeClass: "ctrl-badge-x", symbol: "✕" },
-    { id: "btn-start-mode-1", badgeClass: "ctrl-badge-triangle", symbol: "△" },
-    { id: "btn-start-mode-2", badgeClass: "ctrl-badge-circle", symbol: "○" },
-  ];
-  const XBOX_BADGE_DEFS = [
-    { id: "btn-start-mode-0", badgeClass: "ctrl-badge-xbox-a", symbol: "A" },
-    { id: "btn-start-mode-1", badgeClass: "ctrl-badge-xbox-y", symbol: "Y" },
-    { id: "btn-start-mode-2", badgeClass: "ctrl-badge-xbox-b", symbol: "B" },
-  ];
+  // badge defs - these update dynamically based on swapXB setting
+  function getPS_BADGE_DEFS() {
+    if (settings && settings.swapXB) {
+      return [
+        { id: "btn-start-mode-0", badgeClass: "ctrl-badge-x", symbol: "○" },
+        {
+          id: "btn-start-mode-1",
+          badgeClass: "ctrl-badge-triangle",
+          symbol: "△",
+        },
+        {
+          id: "btn-start-mode-2",
+          badgeClass: "ctrl-badge-circle",
+          symbol: "✕",
+        },
+      ];
+    }
+    return [
+      { id: "btn-start-mode-0", badgeClass: "ctrl-badge-x", symbol: "✕" },
+      {
+        id: "btn-start-mode-1",
+        badgeClass: "ctrl-badge-triangle",
+        symbol: "△",
+      },
+      { id: "btn-start-mode-2", badgeClass: "ctrl-badge-circle", symbol: "○" },
+    ];
+  }
+  function getXBOX_BADGE_DEFS() {
+    if (settings && settings.swapXB) {
+      return [
+        {
+          id: "btn-start-mode-0",
+          badgeClass: "ctrl-badge-xbox-a",
+          symbol: "B",
+        },
+        {
+          id: "btn-start-mode-1",
+          badgeClass: "ctrl-badge-xbox-y",
+          symbol: "Y",
+        },
+        {
+          id: "btn-start-mode-2",
+          badgeClass: "ctrl-badge-xbox-b",
+          symbol: "A",
+        },
+      ];
+    }
+    return [
+      { id: "btn-start-mode-0", badgeClass: "ctrl-badge-xbox-a", symbol: "A" },
+      { id: "btn-start-mode-1", badgeClass: "ctrl-badge-xbox-y", symbol: "Y" },
+      { id: "btn-start-mode-2", badgeClass: "ctrl-badge-xbox-b", symbol: "B" },
+    ];
+  }
 
   // ---------- default settings ----------
-  // IMPORTANT: if u add a new setting put it here too or it wont save/load properly
   const DEFAULT_SETTINGS = {
     enabled: true,
     autoLoot: true,
     consumableWheel: true,
-    spamFire: false, // spam fire mode for pistols etc
-    blockKeyboard: true, // block kb when controller connected
-    hideCursor: true, // hide cursor ingame
+    spamFire: false,
+    blockKeyboard: true,
+    hideCursor: true,
+    swapXB: false, // X/B (or Cross/Circle) button swap
+    forceDesktop: false, // Force desktop layout
     aimSensitivity: 50,
     aimSmoothing: 5,
     leftDeadzone: 15,
     rightDeadzone: 12,
-    // hold-to-reload settings
     reloadHold: {
       enabled: true,
-      holdMs: 400, // ms u need to hold square before reload fires
+      holdMs: 400,
     },
     crosshair: {
-      style: "cross", // cross | dot | circle | crossdot
+      style: "cross",
       size: 12,
       thickness: 2,
       gap: 4,
       color: "#00ff88",
       opacity: 90,
       strokeColor: "#000000",
-      strokeWidth: 0, // 0 = no stroke
+      strokeWidth: 0,
     },
     binds: {
       btnInteract: 0, // cross/A  -> F
@@ -129,7 +167,7 @@
       btnMap: 8, // share/view -> M
       btnMenu: 9, // options/start -> Esc
       btnCircle: 1, // circle/B -> quit confirm
-      btnL3: 10, // L3 -> key 3
+      btnL3: 10, // L3 -> T key
       btnR3: 11, // R3 -> drop menu
     },
     menuBinds: {
@@ -140,14 +178,11 @@
   };
 
   // ---------- state ----------
-  // this is kinda messy but whatever it works
   let settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
   try {
     const saved = localStorage.getItem("ctrl_ext_settings_v2");
     if (saved) settings = deepMerge(DEFAULT_SETTINGS, JSON.parse(saved));
-  } catch (e) {
-    // localstorage blocked or whatever, just use defaults
-  }
+  } catch (e) {}
 
   let controllerIndex = null;
   let prevButtons = [];
@@ -164,14 +199,11 @@
   let currentMouseX = window.innerWidth / 2;
   let currentMouseY = window.innerHeight / 2;
   let settingsOpen = false;
-  let listeningFor = null; // for rebinding
+  let listeningFor = null;
 
-  // hold-to-reload state
-  // super trash code but it works, tracks how long square has been held
   let meleeHoldTimer = null;
-  let meleeHoldFired = false; // so reload only fires once per hold
+  let meleeHoldFired = false;
 
-  // drop menu
   let dropMenuOpen = false;
   const DROP_ITEMS = [
     { id: "ui-scope-1xscope", label: "1x Scope" },
@@ -194,7 +226,6 @@
   ];
   let dropSelectedIdx = 0;
 
-  // scope cycling - just cycles through these in order
   const SCOPE_IDS = [
     "ui-scope-1xscope",
     "ui-scope-2xscope",
@@ -203,6 +234,15 @@
     "ui-scope-15xscope",
   ];
   let currentScopeIdx = 0;
+
+  // ---------- X/B swap helpers ----------
+  // When swapXB is on, btn index 0 and 1 are flipped for all logic
+  function swapBtn(idx) {
+    if (!settings.swapXB) return idx;
+    if (idx === 0) return 1;
+    if (idx === 1) return 0;
+    return idx;
+  }
 
   // ---------- util ----------
   function deepMerge(base, override) {
@@ -228,7 +268,6 @@
   }
 
   // ---------- toast ----------
-  // little popup in the corner, works fine dont touch it
   function showToast(type, title, sub) {
     let c = document.getElementById("ctrl-toast-container");
     if (!c) {
@@ -253,8 +292,6 @@
   }
 
   // ---------- cursor hide / keyboard block ----------
-  // hides the mouse cursor when in game and controller is active
-  // kinda hacky with the style injection but whatever
   let cursorStyleEl = null;
   function updateCursorHide() {
     if (!cursorStyleEl) {
@@ -269,9 +306,6 @@
     }
   }
 
-  // keyboard blocking - intercepts ALL keydowns when controller is connected
-  // IMPORTANT: this uses capture phase so it runs before the game sees the event
-  // DO NOT change useCapture to false or it wont work
   function handleKeyboardBlock(e) {
     if (
       !settings.blockKeyboard ||
@@ -279,16 +313,174 @@
       !settings.enabled
     )
       return;
-    // always let F9 through to open settings
     if (e.key === "F9") return;
-    // let browser shortcuts through (ctrl+, alt+, etc)
     if (e.ctrlKey || e.altKey || e.metaKey) return;
     e.stopImmediatePropagation();
     e.preventDefault();
   }
-  // attach in capture phase - runs before game's own listeners
   document.addEventListener("keydown", handleKeyboardBlock, true);
   document.addEventListener("keyup", handleKeyboardBlock, true);
+
+  // ---------- force desktop layout ----------
+  // Mirrors the standalone ForceDesktop userscript, applied on demand
+  let desktopModeActive = false;
+  let vpObserver = null;
+  let touchToMouseBound = null;
+  let origMatchMedia = null;
+
+  function applyForceDesktop() {
+    if (desktopModeActive) return;
+    desktopModeActive = true;
+
+    // Spoof UA
+    try {
+      const desktopUA =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+      Object.defineProperty(navigator, "userAgent", {
+        get: () => desktopUA,
+        configurable: true,
+      });
+      Object.defineProperty(navigator, "userAgentData", {
+        get: () => ({
+          brands: [
+            { brand: "Chromium", version: "124" },
+            { brand: "Google Chrome", version: "124" },
+          ],
+          mobile: false,
+          platform: "Windows",
+          getHighEntropyValues: async () => ({
+            platform: "Windows",
+            mobile: false,
+          }),
+        }),
+        configurable: true,
+      });
+    } catch (e) {}
+
+    try {
+      Object.defineProperty(navigator, "maxTouchPoints", {
+        get: () => 0,
+        configurable: true,
+      });
+    } catch (e) {}
+
+    // Patch viewport
+    function patchViewport() {
+      const existing = document.querySelector('meta[name="viewport"]');
+      const content =
+        "width=1920, initial-scale=" + (window.screen.width / 1920).toFixed(4);
+      if (existing) {
+        existing.setAttribute("content", content);
+      } else {
+        const meta = document.createElement("meta");
+        meta.name = "viewport";
+        meta.content = content;
+        (document.head || document.documentElement).appendChild(meta);
+      }
+    }
+    patchViewport();
+
+    vpObserver = new MutationObserver(patchViewport);
+    if (document.head)
+      vpObserver.observe(document.head, { childList: true, subtree: true });
+
+    // Override matchMedia
+    origMatchMedia = window.matchMedia.bind(window);
+    window.matchMedia = function (query) {
+      const result = origMatchMedia(query);
+      const mobileQ = [
+        "(pointer: coarse)",
+        "(hover: none)",
+        "(any-pointer: coarse)",
+      ];
+      const desktopQ = [
+        "(pointer: fine)",
+        "(hover: hover)",
+        "(any-pointer: fine)",
+      ];
+      if (mobileQ.some((q) => query.trim() === q))
+        return Object.assign(Object.create(result), { matches: false });
+      if (desktopQ.some((q) => query.trim() === q))
+        return Object.assign(Object.create(result), { matches: true });
+      return result;
+    };
+
+    // Touch -> mouse
+    touchToMouseBound = function (evt) {
+      const touch = evt.changedTouches[0];
+      if (!touch) return;
+      const typeMap = {
+        touchstart: "mousedown",
+        touchmove: "mousemove",
+        touchend: "mouseup",
+      };
+      const mouseType = typeMap[evt.type];
+      if (!mouseType) return;
+      const mouseEvt = new MouseEvent(mouseType, {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        screenX: touch.screenX,
+        screenY: touch.screenY,
+        button: 0,
+        buttons: mouseType === "mouseup" ? 0 : 1,
+      });
+      touch.target.dispatchEvent(mouseEvt);
+    };
+    document.addEventListener("touchstart", touchToMouseBound, {
+      passive: true,
+      capture: true,
+    });
+    document.addEventListener("touchmove", touchToMouseBound, {
+      passive: true,
+      capture: true,
+    });
+    document.addEventListener("touchend", touchToMouseBound, {
+      passive: true,
+      capture: true,
+    });
+
+    showToast(
+      "connected",
+      "Force Desktop Layout ON",
+      "Reload page to fully apply UA spoof",
+    );
+  }
+
+  function removeForceDesktop() {
+    if (!desktopModeActive) return;
+    desktopModeActive = false;
+
+    if (vpObserver) {
+      vpObserver.disconnect();
+      vpObserver = null;
+    }
+    if (origMatchMedia) {
+      window.matchMedia = origMatchMedia;
+      origMatchMedia = null;
+    }
+    if (touchToMouseBound) {
+      document.removeEventListener("touchstart", touchToMouseBound, true);
+      document.removeEventListener("touchmove", touchToMouseBound, true);
+      document.removeEventListener("touchend", touchToMouseBound, true);
+      touchToMouseBound = null;
+    }
+    showToast(
+      "disconnected",
+      "Force Desktop Layout OFF",
+      "Reload page to restore UA",
+    );
+  }
+
+  function syncForceDesktop() {
+    if (settings.forceDesktop) applyForceDesktop();
+    else removeForceDesktop();
+  }
+
+  // Apply on load if saved
+  if (settings.forceDesktop) applyForceDesktop();
 
   // ---------- gamepad connect/disconnect ----------
   window.addEventListener("gamepadconnected", (e) => {
@@ -348,8 +540,6 @@
   }
 
   // ---------- main poll loop ----------
-  // runs every frame, reads gamepad state and does stuff
-  // IMPORTANT: keep this lean or youll get input lag
   function startLoop() {
     function loop() {
       animFrameId = requestAnimationFrame(loop);
@@ -376,17 +566,12 @@
         prevButtons[idx] = pressed;
       });
 
-      // block everything else when drop menu is up
       if (!dropMenuOpen) {
         handleMovement();
         if (isInGame) handleAiming();
-        // fire logic - spam mode or normal hold
         const rtHeld = (gp.buttons[settings.binds.btnFire]?.value || 0) > 0.5;
-        if (settings.spamFire) {
-          setMouseButtonSpam(rtHeld);
-        } else {
-          setMouseButtonHeld(rtHeld);
-        }
+        if (settings.spamFire) setMouseButtonSpam(rtHeld);
+        else setMouseButtonHeld(rtHeld);
       }
 
       updateCrosshairPosition();
@@ -400,15 +585,11 @@
   }
 
   // ---------- button down ----------
-  // this function is a mess but it handles basically everything lol
   function onButtonDown(idx) {
-    // rebind intercept - has to be first or it wont capture
     if (listeningFor) {
       finishListening(idx);
       return;
     }
-
-    // drop menu eats all inputs
     if (dropMenuOpen) {
       handleDropMenuInput(idx);
       return;
@@ -417,88 +598,74 @@
     const b = settings.binds;
     const mb = settings.menuBinds;
 
-    // ---- MENU ONLY (not in game) ----
-    // NOTE: these use the menuBinds values which are customizable
-    // hardClick tries every possible click method so it should work
+    // Apply X/B swap for the raw index before matching
+    const effIdx = swapBtn(idx);
+
+    // ---- MENU ONLY ----
     if (!isInGame) {
-      if (idx === mb.playSolo) {
+      if (effIdx === mb.playSolo) {
         hardClick("btn-start-mode-0");
         return;
       }
-      if (idx === mb.playDuo) {
+      if (effIdx === mb.playDuo) {
         hardClick("btn-start-mode-1");
         return;
       }
-      if (idx === mb.playSquad) {
+      if (effIdx === mb.playSquad) {
         hardClick("btn-start-mode-2");
         return;
       }
     }
 
     // drop menu toggle
-    if (idx === b.btnR3 && isInGame) {
+    if (effIdx === b.btnR3 && isInGame) {
       toggleDropMenu();
       return;
     }
 
     // ---- IN GAME ----
     if (isInGame) {
-      if (idx === b.btnInteract) simulateKey("f", "keydown");
-      if (idx === b.btnThrowable) simulateKey("4", "keydown");
-      if (idx === b.btnPickupOther) simulateKey("j", "keydown");
-      if (idx === b.btnR1) simulateKey("q", "keydown");
-      if (idx === b.btnL1) simulateKey("c", "keydown");
-      if (idx === b.btnL3) simulateKey("3", "keydown");
+      if (effIdx === b.btnInteract) simulateKey("f", "keydown");
+      if (effIdx === b.btnThrowable) simulateKey("4", "keydown");
+      if (effIdx === b.btnPickupOther) simulateKey("j", "keydown");
+      if (effIdx === b.btnR1) simulateKey("q", "keydown");
+      if (effIdx === b.btnL1) simulateKey("c", "keydown");
+      if (effIdx === b.btnL3) simulateKey("t", "keydown");
 
-      // melee + hold-to-reload on same button (square)
-      // the hold timer starts on down, if held long enough = reload
-      // if released before timeout = melee
-      if (idx === b.btnMelee) {
+      if (effIdx === b.btnMelee) {
         meleeHoldFired = false;
         if (settings.reloadHold.enabled) {
-meleeHoldTimer = setTimeout(() => {
+          meleeHoldTimer = setTimeout(() => {
             meleeHoldFired = true;
-            simulateKey('r', 'keydown');
-            setTimeout(() => simulateKey('r', 'keyup'), 80);
+            simulateKey("r", "keydown");
+            setTimeout(() => simulateKey("r", "keyup"), 80);
           }, settings.reloadHold.holdMs);
-          // don't fire melee yet — wait to see if they hold or tap
         } else {
-          // reload hold disabled, just do melee immediately as before
           simulateKey("e", "keydown");
         }
       }
 
-      // dpad down = wheel or direct bandage
-      if (idx === b.btnConsWheel) {
+      if (effIdx === b.btnConsWheel) {
         if (settings.consumableWheel) simulateKey("h", "keydown");
         else clickGameEl("ui-loot-bandage");
       }
-
-      // dpad up
-      if (idx === b.btnDpadUp) {
+      if (effIdx === b.btnDpadUp) {
         if (!settings.consumableWheel) clickGameEl("ui-loot-healthkit");
       }
-
-      // dpad left = scope cycle (wheel on) or soda (wheel off)
-      if (idx === b.btnDpadLeft) {
+      if (effIdx === b.btnDpadLeft) {
         if (settings.consumableWheel) cycleScope(-1);
         else clickGameEl("ui-loot-soda");
       }
-
-      // dpad right = scope cycle other way (wheel on) or painkiller (wheel off)
-      if (idx === b.btnDpadRight) {
+      if (effIdx === b.btnDpadRight) {
         if (settings.consumableWheel) cycleScope(1);
         else clickGameEl("ui-loot-painkiller");
       }
     }
 
     // ---- UNIVERSAL ----
-    if (idx === b.btnMap) simulateKey("m", "keydown");
+    if (effIdx === b.btnMap) simulateKey("m", "keydown");
 
-    // options = esc toggle
-    // first press opens menu, sets quitMode
-    // second press closes menu, clears quitMode
-    if (idx === b.btnMenu) {
+    if (effIdx === b.btnMenu) {
       if (isInGame) {
         if (!quitMode) {
           simulateKey("Escape", "keydown");
@@ -512,8 +679,8 @@ meleeHoldTimer = setTimeout(() => {
       }
     }
 
-    // circle in quitMode = confirm quit
-    if (idx === b.btnCircle && isInGame && quitMode) {
+    // quit confirm - uses swapped circle button
+    if (effIdx === b.btnCircle && isInGame && quitMode) {
       hardClick("btn-game-quit");
       quitMode = false;
     }
@@ -523,37 +690,32 @@ meleeHoldTimer = setTimeout(() => {
   function onButtonUp(idx) {
     if (dropMenuOpen) return;
     const b = settings.binds;
+    const effIdx = swapBtn(idx);
 
-    if (idx === b.btnInteract) simulateKey("f", "keyup");
-    if (idx === b.btnThrowable) simulateKey("4", "keyup");
-    if (idx === b.btnPickupOther) simulateKey("j", "keyup");
-    if (idx === b.btnR1) simulateKey("q", "keyup");
-    if (idx === b.btnL1) simulateKey("c", "keyup");
-    if (idx === b.btnL3) simulateKey("3", "keyup");
-    if (idx === b.btnMap) simulateKey("m", "keyup");
-    if (idx === b.btnMenu) simulateKey("Escape", "keyup");
-    if (idx === b.btnConsWheel && settings.consumableWheel)
+    if (effIdx === b.btnInteract) simulateKey("f", "keyup");
+    if (effIdx === b.btnThrowable) simulateKey("4", "keyup");
+    if (effIdx === b.btnPickupOther) simulateKey("j", "keyup");
+    if (effIdx === b.btnR1) simulateKey("q", "keyup");
+    if (effIdx === b.btnL1) simulateKey("c", "keyup");
+    if (effIdx === b.btnL3) simulateKey("t", "keyup");
+    if (effIdx === b.btnMap) simulateKey("m", "keyup");
+    if (effIdx === b.btnMenu) simulateKey("Escape", "keyup");
+    if (effIdx === b.btnConsWheel && settings.consumableWheel)
       simulateKey("h", "keyup");
 
-    // melee release logic
-    // if the hold timer hasnt fired, clear it (just a tap = melee)
-    // if it already fired (reload), ignore
-    if (idx === b.btnMelee) {
+    if (effIdx === b.btnMelee) {
       if (meleeHoldTimer) {
         clearTimeout(meleeHoldTimer);
         meleeHoldTimer = null;
       }
       if (!meleeHoldFired) {
-        // they released before reload triggered = tap = melee
         simulateKey("e", "keydown");
         setTimeout(() => simulateKey("e", "keyup"), 80);
       }
     }
   }
-  // if meleeHoldFired = true, reload already happened, skip melee entirely
 
   // ---------- scope cycling ----------
-  // cycles through 1x 2x 4x 8x 15x, finds whichever is currently active
   function cycleScope(dir) {
     let activeIdx = currentScopeIdx;
     for (let i = 0; i < SCOPE_IDS.length; i++) {
@@ -576,13 +738,11 @@ meleeHoldTimer = setTimeout(() => {
     if (dropMenuOpen) closeDropMenu();
     else openDropMenu();
   }
-
   function openDropMenu() {
     dropMenuOpen = true;
     dropSelectedIdx = 0;
     renderDropMenu();
   }
-
   function closeDropMenu() {
     dropMenuOpen = false;
     document.getElementById("ctrl-drop-menu")?.remove();
@@ -592,10 +752,21 @@ meleeHoldTimer = setTimeout(() => {
     document.getElementById("ctrl-drop-menu")?.remove();
     const menu = document.createElement("div");
     menu.id = "ctrl-drop-menu";
-    const hint =
-      controllerType === "xbox"
-        ? "↑↓ Navigate  •  A = Drop  •  B = Close"
-        : "↑↓ Navigate  •  ✕ = Drop  •  ○ = Close";
+    const confirmBtn = settings.swapXB
+      ? controllerType === "xbox"
+        ? "B"
+        : "○"
+      : controllerType === "xbox"
+        ? "A"
+        : "✕";
+    const closeBtn = settings.swapXB
+      ? controllerType === "xbox"
+        ? "A"
+        : "✕"
+      : controllerType === "xbox"
+        ? "B"
+        : "○";
+    const hint = `↑↓ Navigate  •  ${confirmBtn} = Drop  •  ${closeBtn} = Close`;
     menu.innerHTML = `
       <div class="ctrl-drop-title">DROP ITEM</div>
       <div class="ctrl-drop-hint">${hint}</div>
@@ -623,20 +794,21 @@ meleeHoldTimer = setTimeout(() => {
 
   function handleDropMenuInput(idx) {
     const b = settings.binds;
-    if (idx === b.btnDpadUp || idx === 12) {
+    const effIdx = swapBtn(idx);
+    if (effIdx === b.btnDpadUp || idx === 12) {
       dropSelectedIdx =
         (dropSelectedIdx - 1 + DROP_ITEMS.length) % DROP_ITEMS.length;
       renderDropList();
-    } else if (idx === b.btnConsWheel || idx === 13) {
+    } else if (effIdx === b.btnConsWheel || idx === 13) {
       dropSelectedIdx = (dropSelectedIdx + 1) % DROP_ITEMS.length;
       renderDropList();
-    } else if (idx === b.btnInteract || idx === 0) {
+    } else if (effIdx === b.btnInteract || effIdx === 0) {
       const target = document.getElementById(DROP_ITEMS[dropSelectedIdx].id);
       if (target) forceRightClick(target);
     } else if (
-      idx === b.btnCircle ||
-      idx === 1 ||
-      idx === b.btnR3 ||
+      effIdx === b.btnCircle ||
+      effIdx === 1 ||
+      effIdx === b.btnR3 ||
       idx === 11
     ) {
       closeDropMenu();
@@ -644,8 +816,6 @@ meleeHoldTimer = setTimeout(() => {
   }
 
   // ---------- movement ----------
-  // left stick -> WASD, just thresholded not analog
-  // tried doing analog force but the game doesnt support it anyway
   let moveKeyState = { w: false, a: false, s: false, d: false };
   function handleMovement() {
     const t = 0.25;
@@ -672,9 +842,6 @@ meleeHoldTimer = setTimeout(() => {
   }
 
   // ---------- aiming ----------
-  // right stick moves angle of an invisible circle centered on player
-  // sensitivity slider changes the radius of that circle
-  // this is way better than free mouse movement for controllers trust
   function handleAiming() {
     if (Math.hypot(rightX, rightY) < 0.05) return;
     const sf = 0.08 + (settings.aimSmoothing / 100) * 0.12;
@@ -701,95 +868,75 @@ meleeHoldTimer = setTimeout(() => {
   }
 
   // ---------- crosshair ----------
-  // renders an svg crosshair at the current aim position
-  // supports stroke (outline) now too - that was annoying to add
   let crosshairEl = null;
-
   function ensureCrosshair() {
     if (crosshairEl) return;
     crosshairEl = document.createElement("div");
     crosshairEl.id = "ctrl-crosshair";
     document.body.appendChild(crosshairEl);
   }
-
   function updateCrosshairPosition() {
     if (!crosshairEl || controllerIndex === null) return;
     crosshairEl.style.left = currentMouseX + "px";
     crosshairEl.style.top = currentMouseY + "px";
   }
-
   function rebuildCrosshair() {
     crosshairEl?.remove();
     crosshairEl = null;
     ensureCrosshair();
     applyCrosshairStyle();
   }
-
-  // generates the actual svg for the crosshair
-  // stroke renders underneath the main color so it looks like an outline
   function applyCrosshairStyle() {
     if (!crosshairEl) return;
     const c = settings.crosshair;
-    const col = c.color;
-    const sw = c.strokeWidth || 0;
-    const sc = c.strokeColor || "#000000";
+    const col = c.color,
+      sw = c.strokeWidth || 0,
+      sc = c.strokeColor || "#000000";
     const alpha = (c.opacity / 100).toFixed(2);
-
     crosshairEl.innerHTML = "";
     crosshairEl.style.cssText = `position:fixed;pointer-events:none;z-index:99997;transform:translate(-50%,-50%);left:${currentMouseX}px;top:${currentMouseY}px;`;
-
     if (c.style === "dot") {
       const total = c.size + sw * 2;
       crosshairEl.innerHTML = `<svg width="${total}" height="${total}" style="opacity:${alpha};display:block;">
         ${sw > 0 ? `<circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2 + sw}" fill="${sc}"/>` : ""}
-        <circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2}" fill="${col}"/>
-      </svg>`;
+        <circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2}" fill="${col}"/></svg>`;
     } else if (c.style === "circle") {
-      const r = c.size;
-      const dim = (r + c.thickness + sw) * 2 + 2;
-      const cx = dim / 2;
+      const r = c.size,
+        dim = (r + c.thickness + sw) * 2 + 2,
+        cx = dim / 2;
       crosshairEl.innerHTML = `<svg width="${dim}" height="${dim}" style="opacity:${alpha};display:block;">
         ${sw > 0 ? `<circle cx="${cx}" cy="${cx}" r="${r}" stroke="${sc}" stroke-width="${c.thickness + sw * 2}" fill="none"/>` : ""}
-        <circle cx="${cx}" cy="${cx}" r="${r}" stroke="${col}" stroke-width="${c.thickness}" fill="none"/>
-      </svg>`;
+        <circle cx="${cx}" cy="${cx}" r="${r}" stroke="${col}" stroke-width="${c.thickness}" fill="none"/></svg>`;
     } else {
-      // cross or crossdot
       const g = c.gap,
         s = c.size,
         t = c.thickness;
-      const w = (s + g) * 2 + t + sw * 2;
-      const cx = w / 2,
+      const w = (s + g) * 2 + t + sw * 2,
+        cx = w / 2,
         cy = w / 2;
-
-      // helper renders stroke line then color line on top
       const line = (x1, y1, x2, y2) =>
         (sw > 0
           ? `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${sc}" stroke-width="${t + sw * 2}" stroke-linecap="round"/>`
           : "") +
         `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${t}" stroke-linecap="round"/>`;
-
       const lines =
-        line(cx, sw, cx, cy - g) + // top
-        line(cx, cy + g, cx, w - sw) + // bottom
-        line(sw, cy, cx - g, cy) + // left
-        line(cx + g, cy, w - sw, cy); // right
-
+        line(cx, sw, cx, cy - g) +
+        line(cx, cy + g, cx, w - sw) +
+        line(sw, cy, cx - g, cy) +
+        line(cx + g, cy, w - sw, cy);
       const dotPart =
         c.style === "crossdot"
           ? (sw > 0
               ? `<circle cx="${cx}" cy="${cy}" r="${t + sw}" fill="${sc}"/>`
               : "") + `<circle cx="${cx}" cy="${cy}" r="${t}" fill="${col}"/>`
           : "";
-
       crosshairEl.innerHTML = `<svg width="${w}" height="${w}" style="opacity:${alpha};display:block;">${lines}${dotPart}</svg>`;
     }
   }
 
   // ---------- fire / click ----------
-  // normal hold mode - sends repeated mousedown while held
   let fireInterval = null;
   const heldMouseBtn = { held: false };
-
   function setMouseButtonHeld(held) {
     if (held && !heldMouseBtn.held) {
       heldMouseBtn.held = true;
@@ -807,10 +954,8 @@ meleeHoldTimer = setTimeout(() => {
     }
   }
 
-  // spam mode - rapid clicks, good for pistols / semi-auto
-  let spamInterval = null;
-  let spamActive = false;
-
+  let spamInterval = null,
+    spamActive = false;
   function setMouseButtonSpam(held) {
     if (held && !spamActive) {
       spamActive = true;
@@ -823,13 +968,11 @@ meleeHoldTimer = setTimeout(() => {
       fireMouseAt(currentMouseX, currentMouseY, "mouseup");
     }
   }
-
   function doSpamShot() {
     fireMouseAt(currentMouseX, currentMouseY, "mousedown");
     setTimeout(() => fireMouseAt(currentMouseX, currentMouseY, "mouseup"), 25);
     setTimeout(() => fireMouseAt(currentMouseX, currentMouseY, "click"), 30);
   }
-
   function fireMouseAt(x, y, type) {
     const opts = {
       bubbles: true,
@@ -846,7 +989,6 @@ meleeHoldTimer = setTimeout(() => {
   }
 
   // ---------- click helpers ----------
-  // hardClick specifically for menu buttons - uses every method just in case
   function hardClick(id) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -880,16 +1022,14 @@ meleeHoldTimer = setTimeout(() => {
       new PointerEvent("pointerup", { bubbles: true, cancelable: true }),
     );
   }
-
   function clickGameEl(id) {
     const el = document.getElementById(id);
     if (el) forceClick(el);
   }
-
   function forceClick(el) {
-    const r = el.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const cy = r.top + r.height / 2;
+    const r = el.getBoundingClientRect(),
+      cx = r.left + r.width / 2,
+      cy = r.top + r.height / 2;
     ["mousedown", "mouseup", "click"].forEach((t) =>
       el.dispatchEvent(
         new MouseEvent(t, {
@@ -903,46 +1043,22 @@ meleeHoldTimer = setTimeout(() => {
     );
     el.click();
   }
-
-  // right click for dropping - tries every event type
-  // some of these probably dont work but one of them does so whatever
   function forceRightClick(el) {
-    const r = el.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const cy = r.top + r.height / 2;
-    el.dispatchEvent(
-      new MouseEvent("contextmenu", {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        clientX: cx,
-        clientY: cy,
-        button: 2,
-        buttons: 2,
-      }),
-    );
-    el.dispatchEvent(
-      new MouseEvent("mousedown", {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        clientX: cx,
-        clientY: cy,
-        button: 2,
-        buttons: 2,
-      }),
-    );
-    el.dispatchEvent(
-      new MouseEvent("mouseup", {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        clientX: cx,
-        clientY: cy,
-        button: 2,
-        buttons: 2,
-      }),
-    );
+    const r = el.getBoundingClientRect(),
+      cx = r.left + r.width / 2,
+      cy = r.top + r.height / 2;
+    const base = {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX: cx,
+      clientY: cy,
+      button: 2,
+      buttons: 2,
+    };
+    el.dispatchEvent(new MouseEvent("contextmenu", base));
+    el.dispatchEvent(new MouseEvent("mousedown", base));
+    el.dispatchEvent(new MouseEvent("mouseup", base));
     el.dispatchEvent(
       new PointerEvent("pointerdown", {
         bubbles: true,
@@ -987,7 +1103,6 @@ meleeHoldTimer = setTimeout(() => {
         }),
       );
     } catch (e) {}
-    // long press fallback just in case
     el.dispatchEvent(
       new MouseEvent("mousedown", {
         bubbles: true,
@@ -1015,7 +1130,6 @@ meleeHoldTimer = setTimeout(() => {
   }
 
   // ---------- key simulation ----------
-  // IMPORTANT: keyCode is deprecated but survev still uses it so we have to send it
   function simulateKey(key, type) {
     const codeMap = {
       w: "KeyW",
@@ -1030,6 +1144,7 @@ meleeHoldTimer = setTimeout(() => {
       r: "KeyR",
       q: "KeyQ",
       c: "KeyC",
+      t: "KeyT",
       1: "Digit1",
       2: "Digit2",
       3: "Digit3",
@@ -1049,6 +1164,7 @@ meleeHoldTimer = setTimeout(() => {
       r: 82,
       q: 81,
       c: 67,
+      t: 84,
       1: 49,
       2: 50,
       3: 51,
@@ -1066,15 +1182,14 @@ meleeHoldTimer = setTimeout(() => {
       cancelable: true,
       view: window,
     });
-document.dispatchEvent(ev);
+    document.dispatchEvent(ev);
     window.dispatchEvent(ev);
     document.body.dispatchEvent(ev);
-    const canvas = document.querySelector('canvas');
+    const canvas = document.querySelector("canvas");
     if (canvas) canvas.dispatchEvent(ev);
   }
 
   // ---------- auto loot ----------
-  // watches the interaction description and bursts interact when it matches loot
   function setupAutoLoot() {
     function burst() {
       if (!settings.autoLoot || controllerIndex === null) return;
@@ -1130,7 +1245,6 @@ document.dispatchEvent(ev);
   }
 
   // ---------- consumable wheel ----------
-  // the radial menu thing, listens for H key (which we simulate from dpad)
   const slotToId = {
     top: "ui-loot-healthkit",
     bottom: "ui-loot-bandage",
@@ -1138,8 +1252,8 @@ document.dispatchEvent(ev);
     right: "ui-loot-soda",
   };
   let wheelOpen = false,
-    wheelSlot = null;
-  let wheelCX = 0,
+    wheelSlot = null,
+    wheelCX = 0,
     wheelCY = 0,
     wheelMX = 0,
     wheelMY = 0;
@@ -1149,7 +1263,6 @@ document.dispatchEvent(ev);
     wheelMY = e.clientY;
     if (wheelOpen) updateWheel();
   });
-
   window.addEventListener("keydown", (e) => {
     if (e.key.toLowerCase() === "h" && !wheelOpen && settings.consumableWheel) {
       const w = document.getElementById("ui-consumables");
@@ -1163,7 +1276,6 @@ document.dispatchEvent(ev);
       updateWheel();
     }
   });
-
   window.addEventListener("keyup", (e) => {
     if (e.key.toLowerCase() === "h" && wheelOpen) {
       wheelOpen = false;
@@ -1179,14 +1291,13 @@ document.dispatchEvent(ev);
       );
     }
   });
-
   function updateWheel() {
     const w = document.getElementById("ui-consumables");
     if (!w) return;
-    const dx = wheelMX - wheelCX;
-    const dy = wheelMY - wheelCY;
-    const dist = Math.hypot(dx, dy);
-    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    const dx = wheelMX - wheelCX,
+      dy = wheelMY - wheelCY;
+    const dist = Math.hypot(dx, dy),
+      angle = (Math.atan2(dy, dx) * 180) / Math.PI;
     wheelSlot =
       dist < 40
         ? "middle"
@@ -1202,7 +1313,6 @@ document.dispatchEvent(ev);
         s.dataset.key === wheelSlot ? "block" : "none";
     });
   }
-
   function setupConsumableWheel() {
     if (document.getElementById("ui-consumables")) return;
     const gameUI = document.getElementById("ui-game");
@@ -1263,7 +1373,7 @@ document.dispatchEvent(ev);
     { key: "btnMap", label: "Map", sub: "M key" },
     { key: "btnMenu", label: "Menu / Esc", sub: "" },
     { key: "btnCircle", label: "Quit confirm", sub: "○ / B  (after esc only)" },
-    { key: "btnL3", label: "L3 Stick Click", sub: "3 key (weapon slot)" },
+    { key: "btnL3", label: "L3 Stick Click", sub: "T key" },
     { key: "btnR3", label: "R3 Stick Click", sub: "Toggle drop item menu" },
   ];
 
@@ -1315,22 +1425,40 @@ document.dispatchEvent(ev);
         ? (navigator.getGamepads()[controllerIndex]?.id?.slice(0, 46) ||
             "Connected") + ` [${controllerType.toUpperCase()}]`
         : "No controller detected";
+
+    // Swap-aware button label helper for status panel
+    const xbtn = settings.swapXB
+      ? controllerType === "xbox"
+        ? "B"
+        : "○"
+      : controllerType === "xbox"
+        ? "A"
+        : "✕";
+    const bbtn = settings.swapXB
+      ? controllerType === "xbox"
+        ? "A"
+        : "✕"
+      : controllerType === "xbox"
+        ? "B"
+        : "○";
+
     const r =
       controllerType === "xbox"
         ? `<b style="color:#c8d8a0">Left Stick</b> → Move &nbsp;<b style="color:#c8d8a0">Right Stick</b> → Aim<br>
          <b style="color:#c8d8a0">RT</b> → Fire &nbsp;<b style="color:#c8d8a0">LT</b> → Swap Weapon<br>
-         <b style="color:#c8d8a0">A</b> → Interact &nbsp;<b style="color:#c8d8a0">Y</b> → Throwable &nbsp;<b style="color:#c8d8a0">X</b> → Melee/Reload<br>
+         <b style="color:#c8d8a0">${xbtn}</b> → Interact &nbsp;<b style="color:#c8d8a0">Y</b> → Throwable &nbsp;<b style="color:#c8d8a0">X</b> → Melee/Reload<br>
          <b style="color:#c8d8a0">RB</b> → Q &nbsp;<b style="color:#c8d8a0">LB</b> → C<br>
          <b style="color:#c8d8a0">↓ Dpad</b> → Heal/Wheel &nbsp;<b style="color:#c8d8a0">← Dpad</b> → Scope Cycle<br>
-         <b style="color:#c8d8a0">LS</b> → Slot 3 &nbsp;<b style="color:#c8d8a0">RS</b> → Drop Menu<br>
+         <b style="color:#c8d8a0">LS</b> → T &nbsp;<b style="color:#c8d8a0">RS</b> → Drop Menu<br>
          <b style="color:#c8d8a0">View</b> → Map &nbsp;<b style="color:#c8d8a0">Menu</b> → Esc`
         : `<b style="color:#c8d8a0">Left Stick</b> → Move &nbsp;<b style="color:#c8d8a0">Right Stick</b> → Aim<br>
          <b style="color:#c8d8a0">R2</b> → Fire &nbsp;<b style="color:#c8d8a0">L2</b> → Swap Weapon<br>
-         <b style="color:#c8d8a0">✕</b> → Interact &nbsp;<b style="color:#c8d8a0">△</b> → Throwable &nbsp;<b style="color:#c8d8a0">□</b> → Melee/Reload<br>
+         <b style="color:#c8d8a0">${xbtn}</b> → Interact &nbsp;<b style="color:#c8d8a0">△</b> → Throwable &nbsp;<b style="color:#c8d8a0">□</b> → Melee/Reload<br>
          <b style="color:#c8d8a0">R1</b> → Q &nbsp;<b style="color:#c8d8a0">L1</b> → C<br>
          <b style="color:#c8d8a0">↓ Dpad</b> → Heal/Wheel &nbsp;<b style="color:#c8d8a0">← Dpad</b> → Scope Cycle<br>
-         <b style="color:#c8d8a0">L3</b> → Slot 3 &nbsp;<b style="color:#c8d8a0">R3</b> → Drop Menu<br>
+         <b style="color:#c8d8a0">L3</b> → T &nbsp;<b style="color:#c8d8a0">R3</b> → Drop Menu<br>
          <b style="color:#c8d8a0">Share</b> → Map &nbsp;<b style="color:#c8d8a0">Options</b> → Esc`;
+
     return `<div class="ctrl-tab-panel active" id="ctrl-panel-status">
       <div id="ctrl-status-bar"><div id="ctrl-status-indicator" class="${controllerIndex !== null ? "on" : "off"}"></div><div id="ctrl-status-text">${gpId}</div></div>
       <div class="ctrl-section-label">Master Toggle</div>
@@ -1358,6 +1486,7 @@ document.dispatchEvent(ev);
   }
 
   function buildMenuBindsPanel() {
+    // Show current button names based on swapXB state
     const rows = MENU_BIND_DEFS.map(
       (def) => `
       <div class="ctrl-bind-row">
@@ -1376,6 +1505,7 @@ document.dispatchEvent(ev);
     const holdPct = (((settings.reloadHold.holdMs - 100) / 900) * 100).toFixed(
       0,
     );
+    const xLabel = controllerType === "xbox" ? "A/B" : "✕/○";
     return `<div class="ctrl-tab-panel" id="ctrl-panel-features">
       <div class="ctrl-section-label">Automation</div>
       <div class="ctrl-toggle-row">
@@ -1412,6 +1542,12 @@ document.dispatchEvent(ev);
       </div>`
           : ""
       }
+      <div class="ctrl-section-label">Controller Layout</div>
+      <div class="ctrl-toggle-row">
+        <div><div class="ctrl-toggle-label">${xLabel} Button Swap <span class="ctrl-feature-status ${settings.swapXB ? "" : "off"}">${settings.swapXB ? "ON" : "OFF"}</span></div>
+        <div class="ctrl-toggle-sub">Swaps Interact and Quit-confirm buttons (${xLabel}). Also updates badges and drop menu hints.</div></div>
+        <label class="ctrl-switch"><input type="checkbox" id="toggle-swapXB" ${settings.swapXB ? "checked" : ""}><span class="ctrl-switch-slider"></span></label>
+      </div>
       <div class="ctrl-section-label">Input</div>
       <div class="ctrl-toggle-row">
         <div><div class="ctrl-toggle-label">Block Keyboard <span class="ctrl-feature-status ${settings.blockKeyboard ? "" : "off"}">${settings.blockKeyboard ? "ON" : "OFF"}</span></div>
@@ -1423,11 +1559,17 @@ document.dispatchEvent(ev);
         <div class="ctrl-toggle-sub">Hides the mouse cursor during a match</div></div>
         <label class="ctrl-switch"><input type="checkbox" id="toggle-hideCursor" ${settings.hideCursor ? "checked" : ""}><span class="ctrl-switch-slider"></span></label>
       </div>
+      <div class="ctrl-section-label">Compatibility</div>
+      <div class="ctrl-toggle-row">
+        <div><div class="ctrl-toggle-label">Force Desktop Layout <span class="ctrl-feature-status ${settings.forceDesktop ? "" : "off"}">${settings.forceDesktop ? "ON" : "OFF"}</span></div>
+        <div class="ctrl-toggle-sub">Spoofs desktop UA, disables touch detection, forces mouse events. Useful on mobile/tablet browsers. Reload page after toggling for full effect.</div></div>
+        <label class="ctrl-switch"><input type="checkbox" id="toggle-forceDesktop" ${settings.forceDesktop ? "checked" : ""}><span class="ctrl-switch-slider"></span></label>
+      </div>
       <div class="ctrl-section-label">Drop Menu</div>
       <div style="font-size:11px;color:#8aaa50;line-height:1.7;padding:8px 10px;background:rgba(0,0,0,0.2);border-radius:6px;border:1px solid rgba(90,122,48,0.25);">
         Press <b style="color:#c8d8a0">R3/RS</b> to open. Navigate <b style="color:#c8d8a0">↑↓ Dpad</b>,
-        confirm with <b style="color:#c8d8a0">${controllerType === "xbox" ? "A" : "✕"}</b>,
-        close with <b style="color:#c8d8a0">${controllerType === "xbox" ? "B" : "○"}</b>.
+        confirm with <b style="color:#c8d8a0">${settings.swapXB ? (controllerType === "xbox" ? "B" : "○") : controllerType === "xbox" ? "A" : "✕"}</b>,
+        close with <b style="color:#c8d8a0">${settings.swapXB ? (controllerType === "xbox" ? "A" : "✕") : controllerType === "xbox" ? "B" : "○"}</b>.
         All other inputs blocked while open.
       </div>
     </div>`;
@@ -1469,7 +1611,6 @@ document.dispatchEvent(ev);
       (col) =>
         `<div class="ctrl-color-swatch${c.color === col ? " active" : ""}" data-color="${col}" style="background:${col}"></div>`,
     ).join("");
-    const strokePct = (((c.strokeWidth || 0) / 5) * 100).toFixed(0);
     return `<div class="ctrl-tab-panel" id="ctrl-panel-crosshair">
       <div class="ctrl-section-label">Style</div>
       <div class="ctrl-bind-row" style="flex-wrap:wrap;gap:6px;">
@@ -1534,22 +1675,13 @@ document.dispatchEvent(ev);
       .querySelector("#toggle-consumableWheel")
       ?.addEventListener("change", (e) => {
         settings.consumableWheel = e.target.checked;
-        const fp = overlay.querySelector("#ctrl-panel-features");
-        if (fp) {
-          fp.outerHTML = buildFeaturesPanel();
-          setupFeaturesEvents(overlay);
-        }
+        rebuildFeaturesPanel(overlay);
       });
-
     overlay
       .querySelector("#toggle-reloadHold")
       ?.addEventListener("change", (e) => {
         settings.reloadHold.enabled = e.target.checked;
-        const fp = overlay.querySelector("#ctrl-panel-features");
-        if (fp) {
-          fp.outerHTML = buildFeaturesPanel();
-          setupFeaturesEvents(overlay);
-        }
+        rebuildFeaturesPanel(overlay);
       });
 
     setupFeaturesEvents(overlay);
@@ -1573,8 +1705,8 @@ document.dispatchEvent(ev);
         key: "rightDeadzone",
       },
     ].forEach(({ id, min, max, suffix, key }) => {
-      const sl = overlay.querySelector(`#slider-${id}`);
-      const vl = overlay.querySelector(`#val-${id}`);
+      const sl = overlay.querySelector(`#slider-${id}`),
+        vl = overlay.querySelector(`#val-${id}`);
       if (!sl) return;
       sl.addEventListener("input", () => {
         settings[key] = Number(sl.value);
@@ -1594,8 +1726,8 @@ document.dispatchEvent(ev);
       { id: "chOpacity", key: "opacity", min: 10, max: 100, suffix: "%" },
       { id: "chStrokeWidth", key: "strokeWidth", min: 0, max: 5, suffix: "" },
     ].forEach(({ id, key, min, max, suffix }) => {
-      const sl = overlay.querySelector(`#slider-${id}`);
-      const vl = overlay.querySelector(`#val-${id}`);
+      const sl = overlay.querySelector(`#slider-${id}`),
+        vl = overlay.querySelector(`#val-${id}`);
       if (!sl) return;
       sl.addEventListener("input", () => {
         settings.crosshair[key] = Number(sl.value);
@@ -1609,7 +1741,6 @@ document.dispatchEvent(ev);
       });
     });
 
-    // reload hold ms slider
     const rSlider = overlay.querySelector("#slider-reloadHoldMs");
     const rVal = overlay.querySelector("#val-reloadHoldMs");
     if (rSlider) {
@@ -1623,7 +1754,6 @@ document.dispatchEvent(ev);
       });
     }
 
-    // crosshair style btns
     overlay.querySelectorAll(".ctrl-style-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         overlay
@@ -1657,7 +1787,6 @@ document.dispatchEvent(ev);
         rebuildCrosshair();
         updateCrosshairPreview(overlay);
       });
-
     overlay
       .querySelector("#crosshair-stroke-picker")
       ?.addEventListener("input", (e) => {
@@ -1668,7 +1797,7 @@ document.dispatchEvent(ev);
 
     updateCrosshairPreview(overlay);
 
-    // bind buttons - click to start listening, main loop picks up next press
+    // bind buttons
     overlay
       .querySelectorAll(".ctrl-bind-btn:not(.ctrl-style-btn)")
       .forEach((btn) => {
@@ -1710,7 +1839,31 @@ document.dispatchEvent(ev);
     });
   }
 
-  // separate because features panel rebuilds itself on toggle changes
+  // Helper to rebuild features panel in-place and re-attach events
+  function rebuildFeaturesPanel(overlay) {
+    const fp = overlay.querySelector("#ctrl-panel-features");
+    if (!fp) return;
+    const wasActive = fp.classList.contains("active");
+    fp.outerHTML = buildFeaturesPanel();
+    const newFp = overlay.querySelector("#ctrl-panel-features");
+    if (wasActive) newFp.classList.add("active");
+    setupFeaturesEvents(overlay);
+
+    // Also re-attach reload hold slider if it appeared
+    const rSlider = overlay.querySelector("#slider-reloadHoldMs");
+    const rVal = overlay.querySelector("#val-reloadHoldMs");
+    if (rSlider) {
+      rSlider.addEventListener("input", () => {
+        settings.reloadHold.holdMs = Number(rSlider.value);
+        if (rVal) rVal.textContent = rSlider.value + "ms";
+        rSlider.style.setProperty(
+          "--pct",
+          (((rSlider.value - 100) / 900) * 100).toFixed(0) + "%",
+        );
+      });
+    }
+  }
+
   function setupFeaturesEvents(overlay) {
     overlay
       .querySelector("#toggle-autoLoot")
@@ -1721,6 +1874,7 @@ document.dispatchEvent(ev);
       .querySelector("#toggle-consumableWheel")
       ?.addEventListener("change", (e) => {
         settings.consumableWheel = e.target.checked;
+        rebuildFeaturesPanel(overlay);
       });
     overlay
       .querySelector("#toggle-spamFire")
@@ -1731,7 +1885,55 @@ document.dispatchEvent(ev);
       .querySelector("#toggle-reloadHold")
       ?.addEventListener("change", (e) => {
         settings.reloadHold.enabled = e.target.checked;
+        rebuildFeaturesPanel(overlay);
       });
+    overlay.querySelector("#toggle-swapXB")?.addEventListener("change", (e) => {
+      settings.swapXB = e.target.checked;
+      // Rebuild menu binds panel so button labels update
+      const mbp = overlay.querySelector("#ctrl-panel-menu-binds");
+      if (mbp) {
+        const wasActive = mbp.classList.contains("active");
+        mbp.outerHTML = buildMenuBindsPanel();
+        const newMbp = overlay.querySelector("#ctrl-panel-menu-binds");
+        if (wasActive) newMbp.classList.add("active");
+        // Re-attach bind button listeners for menu binds
+        newMbp.querySelectorAll(".ctrl-bind-btn").forEach((btn) => {
+          btn.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            if (listeningFor) {
+              listeningFor.btn.classList.remove("listening");
+              listeningFor.btn.textContent = btnName(
+                settings[listeningFor.category][listeningFor.key],
+              );
+              listeningFor = null;
+            }
+            listeningFor = {
+              category: btn.dataset.category,
+              key: btn.dataset.key,
+              btn,
+            };
+            btn.classList.add("listening");
+            btn.textContent = "Press a button…";
+          });
+        });
+      }
+      // Rebuild status reference
+      const sp = overlay.querySelector("#ctrl-panel-status");
+      if (sp) {
+        const wasActiveS = sp.classList.contains("active");
+        sp.outerHTML = buildStatusPanel();
+        const newSp = overlay.querySelector("#ctrl-panel-status");
+        if (wasActiveS) newSp.classList.add("active");
+        // Re-attach master toggle
+        overlay
+          .querySelector("#toggle-enabled")
+          ?.addEventListener("change", (ev) => {
+            settings.enabled = ev.target.checked;
+          });
+      }
+      rebuildFeaturesPanel(overlay);
+      updateMenuBadges();
+    });
     overlay
       .querySelector("#toggle-blockKeyboard")
       ?.addEventListener("change", (e) => {
@@ -1743,32 +1945,35 @@ document.dispatchEvent(ev);
         settings.hideCursor = e.target.checked;
         updateCursorHide();
       });
+    overlay
+      .querySelector("#toggle-forceDesktop")
+      ?.addEventListener("change", (e) => {
+        settings.forceDesktop = e.target.checked;
+        syncForceDesktop();
+      });
   }
 
   function updateCrosshairPreview(overlay) {
     const box = overlay.querySelector("#crosshair-preview-box");
     if (!box) return;
-    const c = settings.crosshair;
-    const col = c.color;
-    const sw = c.strokeWidth || 0;
-    const sc = c.strokeColor || "#000000";
+    const c = settings.crosshair,
+      col = c.color,
+      sw = c.strokeWidth || 0,
+      sc = c.strokeColor || "#000000";
     const alpha = (c.opacity / 100).toFixed(2);
     let inner = "";
-
     if (c.style === "dot") {
       const total = c.size + sw * 2;
       inner = `<svg width="${total}" height="${total}" style="opacity:${alpha};display:block;">
         ${sw > 0 ? `<circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2 + sw}" fill="${sc}"/>` : ""}
-        <circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2}" fill="${col}"/>
-      </svg>`;
+        <circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2}" fill="${col}"/></svg>`;
     } else if (c.style === "circle") {
       const r = c.size,
         dim = (r + c.thickness + sw) * 2 + 2,
         cx = dim / 2;
       inner = `<svg width="${dim}" height="${dim}" style="opacity:${alpha};display:block;">
         ${sw > 0 ? `<circle cx="${cx}" cy="${cx}" r="${r}" stroke="${sc}" stroke-width="${c.thickness + sw * 2}" fill="none"/>` : ""}
-        <circle cx="${cx}" cy="${cx}" r="${r}" stroke="${col}" stroke-width="${c.thickness}" fill="none"/>
-      </svg>`;
+        <circle cx="${cx}" cy="${cx}" r="${r}" stroke="${col}" stroke-width="${c.thickness}" fill="none"/></svg>`;
     } else {
       const g = c.gap,
         s = c.size,
@@ -1797,7 +2002,6 @@ document.dispatchEvent(ev);
     box.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:60px;background:rgba(0,0,0,0.4);border-radius:6px;border:1px solid rgba(90,122,48,0.3);">${inner}</div>`;
   }
 
-  // called from main loop when a button is pressed while listeningFor is set
   function finishListening(buttonIdx) {
     if (!listeningFor) return;
     const { category, key, btn } = listeningFor;
@@ -1805,6 +2009,8 @@ document.dispatchEvent(ev);
     btn.classList.remove("listening");
     btn.textContent = btnName(buttonIdx);
     listeningFor = null;
+    // If a menu bind was changed, update the badges immediately
+    if (category === "menuBinds") updateMenuBadges();
   }
 
   function openSettings() {
@@ -1826,7 +2032,6 @@ document.dispatchEvent(ev);
     btn.className =
       "btn-settings menu-option btn-darken btn-start-option controller-settings-btn";
     btn.title = "Controller Settings (F9)";
-    // inline svg so we dont need the extension assets path
     btn.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d4e88a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='6' width='20' height='12' rx='4'/%3E%3Ccircle cx='8.5' cy='12' r='1.5'/%3E%3Cpath d='M15 10v4M13 12h4'/%3E%3C/svg%3E")`;
     const dot = document.createElement("div");
     dot.className = "ctrl-connected-dot";
@@ -1844,7 +2049,8 @@ document.dispatchEvent(ev);
     injectMenuBadges();
   }
   function injectMenuBadges() {
-    const defs = controllerType === "xbox" ? XBOX_BADGE_DEFS : PS_BADGE_DEFS;
+    const defs =
+      controllerType === "xbox" ? getXBOX_BADGE_DEFS() : getPS_BADGE_DEFS();
     defs.forEach(({ id, badgeClass, symbol }) => {
       const el = document.getElementById(id);
       if (!el || el.querySelector(".ctrl-btn-badge")) return;
@@ -1855,7 +2061,6 @@ document.dispatchEvent(ev);
     });
   }
 
-  // watches for the game ui to appear/change and re-injects stuff
   new MutationObserver(() => {
     injectControllerButton();
     injectMenuBadges();
@@ -1874,7 +2079,6 @@ document.dispatchEvent(ev);
   ensureCrosshair();
   applyCrosshairStyle();
 
-  // in case controller was already plugged in when page loaded
   Array.from(navigator.getGamepads()).forEach((gp) => {
     if (gp && controllerIndex === null) {
       controllerIndex = gp.index;
@@ -1887,11 +2091,45 @@ document.dispatchEvent(ev);
     }
   });
 
-  // F9 opens settings from anywhere on the page
   document.addEventListener("keydown", (e) => {
     if (e.key === "F9") {
       buildSettingsUI();
       openSettings();
     }
   });
+  (() => {
+    "use strict";
+
+    // Prevent running twice
+    if (window.__survevKeybindLoaded) return;
+    window.__survevKeybindLoaded = true;
+
+    const KEYBIND_CODE =
+      "AQVF1FVTAiQVVkYAAABAMck0Ew0AACxwAAAp9RRUN+GUE0xFUdWUVVEAAJBWQ7b+";
+
+    function injectKeybind() {
+      const input = document.getElementById("keybind-code-input");
+      const button = document.getElementById("btn-keybind-code-load");
+
+      if (!input || !button) return;
+
+      input.value = KEYBIND_CODE;
+
+      // Let the site detect the change
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+
+      button.click();
+
+      console.log("Keybind code loaded automatically.");
+    }
+
+    // Run once after page load
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", injectKeybind, {
+        once: true,
+      });
+    } else {
+      injectKeybind();
+    }
+  })();
 })();
