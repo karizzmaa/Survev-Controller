@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Survev.io Controller",
+  "version": "1.0.0",
+  "description": "Full controller support for Survev.io with customizable keybinds.",
+  "icons": {
+    "512": "assets/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://survev.io/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["*://survev.io/*"]
+    }
+  ]
+}
