@@ -5,8 +5,15 @@
   "description": "Full controller support for Survev.io with customizable keybinds.",
 
   "icons": {
+    "4": "assets/icon4.png",
+    "8": "assets/icon8.png",
+    "16": "assets/icon16.png",
+    "32": "assets/icon32.png",
+    "64": "assets/icon64.png",
+    "96": "assets/icon96.png",
     "128": "assets/icon128.png",
-    "512": "assets/icon128.png"
+    "256": "assets/icon256.png",
+    "512": "assets/icon512.png"
   },
 
   "browser_specific_settings": {
