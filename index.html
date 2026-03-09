@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Survev Controller</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0c0f;
+      --surface: #111418;
+      --card: #161b22;
+      --border: #21262d;
+      --accent: #00e5ff;
+      --accent2: #ff4d6d;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --glow: 0 0 20px rgba(0,229,255,0.25);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* Custom cursor */
+    .cursor {
+      position: fixed; width: 12px; height: 12px;
+      background: var(--accent); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s, opacity 0.2s;
+      mix-blend-mode: screen;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid rgba(0,229,255,0.5); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.15s ease, width 0.2s, height 0.2s;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 48px;
+      background: rgba(10,12,15,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 12px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900; font-size: 22px; letter-spacing: 1px;
+      color: var(--text); text-decoration: none;
+    }
+    .nav-logo img { width: 32px; height: 32px; border-radius: 6px; }
+    .nav-logo span { color: var(--accent); }
+
+    .nav-links { display: flex; gap: 32px; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 14px;
+      font-weight: 500; letter-spacing: 0.5px;
+      transition: color 0.2s; text-transform: uppercase;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    .nav-cta {
+      background: var(--accent); color: #000;
+      padding: 8px 20px; border-radius: 4px;
+      text-decoration: none; font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 14px; letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: box-shadow 0.2s, transform 0.1s;
+    }
+    .nav-cta:hover { box-shadow: var(--glow); transform: translateY(-1px); }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 120px 32px 80px;
+      position: relative; overflow: hidden;
+    }
+
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black, transparent);
+    }
+
+    .hero-glow {
+      position: absolute; width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,229,255,0.08) 0%, transparent 70%);
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.2);
+      padding: 6px 16px; border-radius: 100px; margin-bottom: 28px;
+      font-size: 12px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--accent); animation: fadeDown 0.6s ease both;
+    }
+    .badge-dot {
+      width: 6px; height: 6px; background: var(--accent);
+      border-radius: 50%; animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900; font-size: clamp(56px, 10vw, 120px);
+      line-height: 0.9; letter-spacing: -1px;
+      animation: fadeDown 0.6s 0.1s ease both;
+    }
+    .hero h1 .line2 { color: var(--accent); display: block; }
+
+    .hero p {
+      max-width: 520px; margin: 24px auto 0;
+      font-size: 18px; color: var(--muted); line-height: 1.7;
+      font-weight: 300;
+      animation: fadeDown 0.6s 0.2s ease both;
+    }
+
+    .hero-actions {
+      display: flex; gap: 16px; margin-top: 40px; flex-wrap: wrap; justify-content: center;
+      animation: fadeDown 0.6s 0.3s ease both;
+    }
+
+    .btn-primary {
+      background: var(--accent); color: #000;
+      padding: 14px 32px; border-radius: 4px; text-decoration: none;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 16px; letter-spacing: 1px; text-transform: uppercase;
+      transition: box-shadow 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { box-shadow: var(--glow); transform: translateY(-2px); }
+
+    .btn-secondary {
+      background: transparent; color: var(--text);
+      padding: 14px 32px; border-radius: 4px; text-decoration: none;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 16px; letter-spacing: 1px; text-transform: uppercase;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s, transform 0.1s;
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+
+    .hero-controller {
+      margin-top: 60px; position: relative;
+      animation: fadeUp 0.8s 0.5s ease both;
+    }
+
+    /* Controller SVG illustration */
+    .controller-svg {
+      width: 320px; filter: drop-shadow(0 0 30px rgba(0,229,255,0.2));
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Scroll indicator */
+    .scroll-hint {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      color: var(--muted); font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      animation: fadeUp 1s 1s ease both;
+    }
+    .scroll-hint-line {
+      width: 1px; height: 40px;
+      background: linear-gradient(to bottom, var(--muted), transparent);
+      animation: scrollLine 2s infinite;
+    }
+    @keyframes scrollLine {
+      0% { transform: scaleY(0); transform-origin: top; }
+      50% { transform: scaleY(1); transform-origin: top; }
+      51% { transform: scaleY(1); transform-origin: bottom; }
+      100% { transform: scaleY(0); transform-origin: bottom; }
+    }
+
+    /* SECTION LAYOUT */
+    section { padding: 100px 48px; max-width: 1200px; margin: 0 auto; }
+    .section-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900; font-size: clamp(36px, 5vw, 64px);
+      line-height: 1; margin-bottom: 20px;
+    }
+    .section-body { color: var(--muted); font-size: 16px; line-height: 1.8; max-width: 560px; }
+
+    /* FEATURES */
+    .features-section { border-top: 1px solid var(--border); }
+
+    .features-header { margin-bottom: 64px; }
+
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2px; background: var(--border);
+      border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+    }
+
+    .feature-card {
+      background: var(--card); padding: 36px 32px;
+      transition: background 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--accent); transform: scaleX(0); transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+    .feature-card:hover { background: #1a2030; }
+    .feature-card:hover::before { transform: scaleX(1); }
+
+    .feature-icon {
+      width: 40px; height: 40px; margin-bottom: 20px;
+      color: var(--accent); opacity: 0.9;
+    }
+    .feature-card h3 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 20px; letter-spacing: 0.5px; margin-bottom: 10px;
+    }
+    .feature-card p { color: var(--muted); font-size: 14px; line-height: 1.7; }
+
+    /* INSTALLATION */
+    .install-section { border-top: 1px solid var(--border); }
+
+    .install-tabs {
+      display: flex; gap: 0; margin-bottom: 40px;
+      border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+      width: fit-content;
+    }
+    .tab-btn {
+      background: var(--card); color: var(--muted);
+      padding: 10px 24px; border: none; cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 600; font-size: 15px; letter-spacing: 1px; text-transform: uppercase;
+      transition: background 0.2s, color 0.2s;
+      border-right: 1px solid var(--border);
+    }
+    .tab-btn:last-child { border-right: none; }
+    .tab-btn.active { background: var(--accent); color: #000; }
+    .tab-btn:hover:not(.active) { background: var(--surface); color: var(--text); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .steps { display: flex; flex-direction: column; gap: 20px; max-width: 680px; }
+    .step {
+      display: flex; gap: 20px; align-items: flex-start;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px; position: relative;
+      transition: border-color 0.2s;
+    }
+    .step:hover { border-color: rgba(0,229,255,0.3); }
+    .step-num {
+      flex-shrink: 0; width: 32px; height: 32px;
+      background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.3);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 14px; color: var(--accent);
+    }
+    .step-content h4 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 18px; margin-bottom: 4px;
+    }
+    .step-content p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .step-content code {
+      background: rgba(0,229,255,0.08); padding: 2px 8px; border-radius: 3px;
+      font-size: 13px; color: var(--accent); font-family: 'Courier New', monospace;
+    }
+
+    /* CONTROLLERS */
+    .controllers-section { border-top: 1px solid var(--border); }
+    .controllers-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px; margin-top: 48px;
+    }
+    .controller-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 28px 24px; text-align: center;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .controller-card:hover { border-color: rgba(0,229,255,0.3); transform: translateY(-4px); }
+    .controller-card .ctrl-icon { font-size: 36px; margin-bottom: 12px; }
+    .controller-card h4 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 18px; margin-bottom: 6px;
+    }
+    .controller-card p { font-size: 13px; color: var(--muted); }
+    .verified-badge {
+      display: inline-block; background: rgba(0,229,255,0.1);
+      border: 1px solid rgba(0,229,255,0.3); color: var(--accent);
+      font-size: 11px; letter-spacing: 1px; padding: 3px 10px; border-radius: 100px;
+      margin-top: 10px; text-transform: uppercase; font-weight: 600;
+    }
+
+    /* FAQ */
+    .faq-section { border-top: 1px solid var(--border); }
+    .faq-list { margin-top: 48px; max-width: 760px; }
+    .faq-item {
+      border-bottom: 1px solid var(--border); overflow: hidden;
+    }
+    .faq-q {
+      width: 100%; background: none; border: none; color: var(--text);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 600; font-size: 20px; text-align: left;
+      padding: 24px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+      transition: color 0.2s; gap: 16px;
+    }
+    .faq-q:hover { color: var(--accent); }
+    .faq-arrow {
+      width: 24px; height: 24px; flex-shrink: 0;
+      border: 1px solid var(--border); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.3s, border-color 0.2s, background 0.2s;
+      font-size: 14px;
+    }
+    .faq-item.open .faq-arrow { transform: rotate(45deg); border-color: var(--accent); background: rgba(0,229,255,0.1); color: var(--accent); }
+    .faq-a {
+      max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.3s;
+      color: var(--muted); font-size: 15px; line-height: 1.8;
+    }
+    .faq-item.open .faq-a { max-height: 200px; padding-bottom: 20px; }
+
+    /* IFRAME SECTION */
+    .demo-section { border-top: 1px solid var(--border); }
+    .iframe-wrapper {
+      margin-top: 40px; position: relative;
+      border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+      background: var(--card);
+    }
+    .iframe-bar {
+      background: var(--surface); padding: 12px 20px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .iframe-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .iframe-url {
+      flex: 1; background: var(--card); border: 1px solid var(--border);
+      border-radius: 4px; padding: 4px 12px; font-size: 13px; color: var(--muted);
+      font-family: 'Courier New', monospace; margin: 0 8px;
+    }
+    .iframe-container {
+      position: relative; width: 100%;
+      padding-top: 56.25%;
+    }
+    .iframe-container iframe {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; border: none;
+    }
+    .iframe-blocked-msg {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; color: var(--muted);
+    }
+    .iframe-blocked-msg .blocked-icon { font-size: 48px; opacity: 0.4; }
+    .iframe-blocked-msg p { font-size: 14px; max-width: 360px; text-align: center; line-height: 1.6; }
+    .iframe-blocked-msg a {
+      color: var(--accent); text-decoration: none; font-weight: 600;
+    }
+
+    /* CREDITS */
+    .credits-section { border-top: 1px solid var(--border); }
+    .credits-grid {
+      display: flex; flex-wrap: wrap; gap: 20px; margin-top: 48px;
+    }
+    .credit-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px 28px; min-width: 220px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .credit-card:hover { border-color: rgba(0,229,255,0.3); transform: translateY(-2px); }
+    .credit-card h4 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 20px; color: var(--accent); margin-bottom: 4px;
+    }
+    .credit-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 48px; text-align: center;
+      color: var(--muted); font-size: 13px;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* REVEAL ANIMATION */
+    .reveal {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 768px) {
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      section { padding: 64px 20px; }
+      footer { padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <img src="https://raw.githubusercontent.com/karizzmaa/Survev-Controller/main/assets/icon128.png" alt="Logo" onerror="this.style.display='none'" />
+    SURVEV <span>CONTROLLER</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#install">Install</a>
+    <a href="#controllers">Controllers</a>
+    <a href="#faq">FAQ</a>
+    <a href="#demo">Demo</a>
+  </div>
+  <a class="nav-cta" href="https://github.com/karizzmaa/Survev-Controller/releases" target="_blank">Download</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+
+  <div class="hero-badge">
+    <div class="badge-dot"></div>
+    Browser Extension · v0.3 Latest
+  </div>
+
+  <h1>
+    PLAY WITH A<br>
+    <span class="line2">CONTROLLER</span>
+  </h1>
+
+  <p>Full gamepad support for Survev.io. Xbox, PlayStation, and any Gamepad API–compatible controller — right in your browser.</p>
+
+  <div class="hero-actions">
+    <a class="btn-primary" href="https://github.com/karizzmaa/Survev-Controller/releases" target="_blank">⬇ Download Extension</a>
+    <a class="btn-secondary" href="https://github.com/karizzmaa/Survev-Controller" target="_blank">View on GitHub</a>
+  </div>
+
+  <div class="hero-controller">
+    <!-- Controller SVG illustration -->
+    <svg class="controller-svg" viewBox="0 0 400 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Body -->
+      <path d="M80 110 Q60 80 70 60 Q80 40 110 40 L290 40 Q320 40 330 60 Q340 80 320 110 L295 170 Q280 200 260 200 L220 200 Q210 200 200 190 Q190 200 180 200 L140 200 Q120 200 105 170 Z" fill="#161b22" stroke="#21262d" stroke-width="1.5"/>
+      <!-- Left grip glow -->
+      <path d="M80 110 Q65 130 75 155 Q85 175 105 170" stroke="#00e5ff" stroke-width="0.5" opacity="0.4"/>
+      <!-- Right grip glow -->
+      <path d="M320 110 Q335 130 325 155 Q315 175 295 170" stroke="#00e5ff" stroke-width="0.5" opacity="0.4"/>
+
+      <!-- D-Pad -->
+      <rect x="118" y="100" width="12" height="36" rx="3" fill="#21262d"/>
+      <rect x="106" y="112" width="36" height="12" rx="3" fill="#21262d"/>
+      <circle cx="124" cy="118" r="6" fill="#2d333b" opacity="0.6"/>
+
+      <!-- Left stick -->
+      <circle cx="155" cy="145" r="14" fill="#21262d"/>
+      <circle cx="155" cy="145" r="8" fill="#2d333b"/>
+      <circle cx="153" cy="143" r="3" fill="#00e5ff" opacity="0.3"/>
+
+      <!-- Right stick -->
+      <circle cx="245" cy="145" r="14" fill="#21262d"/>
+      <circle cx="245" cy="145" r="8" fill="#2d333b"/>
+      <circle cx="243" cy="143" r="3" fill="#00e5ff" opacity="0.3"/>
+
+      <!-- Face buttons -->
+      <circle cx="272" cy="108" r="10" fill="#21262d"/>
+      <circle cx="282" cy="118" r="10" fill="#21262d"/>
+      <circle cx="262" cy="118" r="10" fill="#21262d"/>
+      <circle cx="272" cy="128" r="10" fill="#21262d"/>
+      <!-- Button labels -->
+      <text x="272" y="112.5" text-anchor="middle" fill="#ff4d6d" font-size="10" font-family="Barlow Condensed" font-weight="700">Y</text>
+      <text x="286" y="122.5" text-anchor="middle" fill="#00e5ff" font-size="10" font-family="Barlow Condensed" font-weight="700">B</text>
+      <text x="258" y="122.5" text-anchor="middle" fill="#00e5ff" font-size="10" font-family="Barlow Condensed" font-weight="700">X</text>
+      <text x="272" y="132.5" text-anchor="middle" fill="#4cd964" font-size="10" font-family="Barlow Condensed" font-weight="700">A</text>
+
+      <!-- Bumpers -->
+      <path d="M95 60 Q110 48 140 48 L150 48 L148 60 Q130 58 95 60Z" fill="#21262d"/>
+      <path d="M305 60 Q290 48 260 48 L250 48 L252 60 Q270 58 305 60Z" fill="#21262d"/>
+
+      <!-- Center area -->
+      <rect x="180" y="108" width="16" height="10" rx="2" fill="#21262d"/>
+      <rect x="204" y="108" width="16" height="10" rx="2" fill="#21262d"/>
+      <circle cx="200" cy="100" r="8" fill="#21262d"/>
+      <circle cx="200" cy="100" r="4" fill="#00e5ff" opacity="0.2"/>
+
+      <!-- Scan line effect -->
+      <rect x="70" y="40" width="260" height="160" rx="8" fill="url(#scanLines)" opacity="0.04"/>
+      <defs>
+        <pattern id="scanLines" x="0" y="0" width="2" height="4" patternUnits="userSpaceOnUse">
+          <rect width="2" height="2" fill="white"/>
+        </pattern>
+      </defs>
+
+      <!-- Glow under controller -->
+      <ellipse cx="200" cy="205" rx="120" ry="8" fill="#00e5ff" opacity="0.06"/>
+    </svg>
+  </div>
+
+  <div class="scroll-hint">
+    <div class="scroll-hint-line"></div>
+    Scroll
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features" class="features-section">
+  <div class="features-header reveal">
+    <div class="section-label">What it does</div>
+    <div class="section-title">Packed with<br>Control</div>
+    <p class="section-body">Everything you need to play Survev.io with a gamepad, built right into your browser.</p>
+  </div>
+
+  <div class="features-grid reveal">
+    <div class="feature-card">
+      <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      </svg>
+      <h3>Full Controller Support</h3>
+      <p>All major game actions mapped — movement, aiming, shooting, weapon switching, and interactions.</p>
+    </div>
+    <div class="feature-card">
+      <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+      </svg>
+      <h3>Customizable Bindings</h3>
+      <p>Remap any button to your preference. Build the layout that feels most natural to you.</p>
+    </div>
+    <div class="feature-card">
+      <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.54 0 2.99.39 4.26 1.07"/>
+      </svg>
+      <h3>Feature Toggles</h3>
+      <p>Enable or disable individual features to tailor the experience exactly how you want it.</p>
+    </div>
+    <div class="feature-card">
+      <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+      </svg>
+      <h3>Works in Browser</h3>
+      <p>No extra software. Runs as a lightweight browser extension with zero impact on gameplay.</p>
+    </div>
+    <div class="feature-card">
+      <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+      <h3>Lightweight</h3>
+      <p>Minimal footprint. The extension runs efficiently in the background without slowing your game.</p>
+    </div>
+    <div class="feature-card">
+      <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+      <h3>Accessibility First</h3>
+      <p>Ideal for handheld setups, couch gaming, and players who rely on controller input.</p>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install" class="install-section">
+  <div class="reveal">
+    <div class="section-label">Get started</div>
+    <div class="section-title">Install in<br>60 Seconds</div>
+  </div>
+
+  <div class="install-tabs reveal" style="margin-top:40px">
+    <button class="tab-btn active" onclick="switchTab('chrome')">Chrome / Chromium</button>
+    <button class="tab-btn" onclick="switchTab('firefox')">Firefox</button>
+  </div>
+
+  <div id="tab-chrome" class="tab-content active reveal">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Download the Release</h4>
+          <p>Get the latest <code>.crx</code> file from the <a href="https://github.com/karizzmaa/Survev-Controller/releases" target="_blank" style="color:var(--accent)">Releases page</a>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Open Extensions Page</h4>
+          <p>Navigate to <code>chrome://extensions</code> in your browser address bar.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Enable Developer Mode</h4>
+          <p>Toggle on <strong>Developer Mode</strong> in the top-right corner of the page.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Drag & Drop</h4>
+          <p>Drag the <code>.crx</code> file onto the extensions page and confirm installation.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h4>Play!</h4>
+          <p>Open <strong>Survev.io</strong>, connect your controller, and start playing.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-firefox" class="tab-content reveal">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Download the Release</h4>
+          <p>Get the latest <code>.xpi</code> file from the <a href="https://github.com/karizzmaa/Survev-Controller/releases" target="_blank" style="color:var(--accent)">Releases page</a>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Open Add-ons</h4>
+          <p>Navigate to <code>about:addons</code> in your Firefox address bar.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Drag & Drop</h4>
+          <p>Drag the <code>.xpi</code> file directly onto the add-ons page.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Confirm Install</h4>
+          <p>Click <strong>Install</strong> when Firefox prompts you.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h4>Play!</h4>
+          <p>Open <strong>Survev.io</strong> and enjoy controller support.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTROLLERS -->
+<section id="controllers" class="controllers-section">
+  <div class="reveal">
+    <div class="section-label">Compatibility</div>
+    <div class="section-title">Supported<br>Controllers</div>
+    <p class="section-body">Uses the browser Gamepad API — most modern controllers work out of the box.</p>
+  </div>
+
+  <div class="controllers-grid">
+    <div class="controller-card reveal">
+      <div class="ctrl-icon">🎮</div>
+      <h4>Xbox 360</h4>
+      <p>Wired &amp; wireless</p>
+      <span class="verified-badge">✓ Verified</span>
+    </div>
+    <div class="controller-card reveal">
+      <div class="ctrl-icon">🎮</div>
+      <h4>Xbox One</h4>
+      <p>All variants</p>
+      <span class="verified-badge">✓ Verified</span>
+    </div>
+    <div class="controller-card reveal">
+      <div class="ctrl-icon">🕹️</div>
+      <h4>DualShock 4</h4>
+      <p>PS4 controller</p>
+      <span class="verified-badge">✓ Verified</span>
+    </div>
+    <div class="controller-card reveal">
+      <div class="ctrl-icon">🕹️</div>
+      <h4>Other Controllers</h4>
+      <p>Any Gamepad API–compatible device may work</p>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO / IFRAME -->
+<section id="demo" class="demo-section">
+  <div class="reveal">
+    <div class="section-label">Try it now</div>
+    <div class="section-title">Play Survev.io</div>
+    <p class="section-body">Jump straight into the game below. Install the extension first, then reload this page and connect your controller.</p>
+  </div>
+
+  <div class="iframe-wrapper reveal" style="margin-top:40px">
+    <div class="iframe-bar">
+      <div class="iframe-dot" style="background:#ff5f57"></div>
+      <div class="iframe-dot" style="background:#febc2e"></div>
+      <div class="iframe-dot" style="background:#28c840"></div>
+      <div class="iframe-url">survev.io</div>
+      <a href="https://survev.io" target="_blank" style="color:var(--muted);font-size:13px;text-decoration:none">↗ Open in tab</a>
+    </div>
+    <div class="iframe-container">
+      <iframe
+        id="gameFrame"
+        src="https://survev.io"
+        title="Survev.io"
+        allow="gamepad *; fullscreen"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
+        loading="lazy"
+      ></iframe>
+      <div class="iframe-blocked-msg" id="iframeMsg" style="display:none">
+        <div class="blocked-icon">🎮</div>
+        <p>Survev.io can't be embedded here due to browser security restrictions.</p>
+        <a href="https://survev.io" target="_blank">→ Open Survev.io directly</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="faq-section">
+  <div class="reveal">
+    <div class="section-label">FAQ</div>
+    <div class="section-title">Common<br>Questions</div>
+  </div>
+
+  <div class="faq-list reveal">
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Does this give any unfair advantage?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-a">No. The extension only translates controller input into normal game controls. It doesn't modify the game or give any gameplay advantage over other players.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Can I still use keyboard and mouse?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-a">Yes. The extension doesn't disable keyboard and mouse input. You can switch freely between input methods.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Why isn't my controller being detected?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-a">Make sure the controller is connected before opening the game, and that your browser supports the Gamepad API. Try reconnecting the controller or refreshing the page. Also check that your OS is detecting the controller properly.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Will it increase CPU usage?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-a">Controller polling may slightly increase CPU usage depending on your browser. Closing unused tabs and refreshing the page can help. The extension is designed to be lightweight.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How do I contribute or report a bug?
+        <span class="faq-arrow">+</span>
+      </button>
+      <div class="faq-a">Bug reports, feature ideas, and pull requests are all welcome on the GitHub repository. Open an issue and the team will look into it.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CREDITS -->
+<section class="credits-section">
+  <div class="reveal">
+    <div class="section-label">The team</div>
+    <div class="section-title">Credits</div>
+  </div>
+
+  <div class="credits-grid reveal">
+    <div class="credit-card">
+      <h4>piesimp</h4>
+      <p>Creator of Survev Controller</p>
+    </div>
+    <div class="credit-card">
+      <h4>catsarews5319</h4>
+      <p>Original idea for the project</p>
+    </div>
+    <div class="credit-card">
+      <h4>HoaiBao0906</h4>
+      <p>Testing, bug reports & feature ideas 🐸</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    Survev Controller is open source.
+    <a href="https://github.com/karizzmaa/Survev-Controller" target="_blank">View on GitHub</a>
+    · Not affiliated with Survev.io
+  </p>
+</footer>
+
+<script>
+  // Cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  function animateCursor() {
+    cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+    rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+    requestAnimationFrame(animateCursor);
+  }
+  animateCursor();
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(1.8)'; });
+  document.addEventListener('mouseup', () => { cursor.style.transform = 'translate(-50%,-50%) scale(1)'; });
+
+  // Tab switching
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + id).classList.add('active');
+  }
+
+  // FAQ accordion
+  function toggleFaq(btn) {
+    const item = btn.parentElement;
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // iframe error handling
+  const frame = document.getElementById('gameFrame');
+  const msg = document.getElementById('iframeMsg');
+  frame.addEventListener('error', () => { frame.style.display = 'none'; msg.style.display = 'flex'; });
+  // Also try to detect load failure via timeout
+  const timer = setTimeout(() => {
+    try {
+      const doc = frame.contentDocument;
+      if (!doc || doc.body === null) { frame.style.display = 'none'; msg.style.display = 'flex'; }
+    } catch(e) { /* cross-origin, likely loaded */ }
+  }, 6000);
+  frame.addEventListener('load', () => clearTimeout(timer));
+</script>
+
+</body>
+</html>
