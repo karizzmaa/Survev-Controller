@@ -1,6 +1,6 @@
 <div align="center">
    <a href="https://github.com/karizzmaa/Survev-Controller">
-      <img src="assets/icon128.png" alt="Survev Controller Logo" width="120" height="120">
+      <img src="assets/icon512.png" alt="Survev Controller Logo" width="120" height="120">
    </a>
 
 # Survev Controller
