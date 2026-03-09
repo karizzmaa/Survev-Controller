@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Survev.io Controller",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Full controller support for Survev.io with customizable keybinds.",
 
   "icons": {
