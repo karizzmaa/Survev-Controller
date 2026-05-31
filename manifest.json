@@ -1,19 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Survev.io Controller",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Full controller support for Survev.io with customizable keybinds.",
 
   "icons": {
-    "4": "assets/icon4.png",
-    "8": "assets/icon8.png",
-    "16": "assets/icon16.png",
-    "32": "assets/icon32.png",
-    "64": "assets/icon64.png",
-    "96": "assets/icon96.png",
     "128": "assets/icon128.png",
-    "256": "assets/icon256.png",
-    "512": "assets/icon512.png"
+    "512": "assets/icon128.png"
   },
 
   "browser_specific_settings": {
@@ -49,3 +42,4 @@
     }
   ]
 }
+// optimised for both chrome and firefox btw :p
