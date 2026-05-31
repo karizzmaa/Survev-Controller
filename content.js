@@ -1,79 +1,35 @@
-// survev controller extension - content.js
-// if u break something its not my fault
 
 (function () {
   "use strict";
-
-  // UI STATE DETECTOR — always running, no panel output
   const uiState = { menu: false, ingame: false, map: false, esc: false };
-
-  function isVisible(el) {
-    if (!el) return false;
-    const style = getComputedStyle(el);
-    return (
-      style.display !== "none" &&
-      style.visibility !== "hidden" &&
-      style.opacity !== "0" &&
-      el.offsetWidth > 0 &&
-      el.offsetHeight > 0
-    );
-  }
-  function displayValue(el) {
-    if (!el) return "none";
-    return getComputedStyle(el).display;
+  let _uiCache = { playBtn: null, map: null, escMenu: null, weaponContainer: null, ts: 0 };
+  function getUIEls() {
+    const now = Date.now();
+    if (now - _uiCache.ts > 1000) {
+      _uiCache.playBtn = document.getElementById("btn-start-mode-0");
+      _uiCache.map = document.getElementById("big-map");
+      _uiCache.escMenu = document.getElementById("ui-game-menu");
+      _uiCache.weaponContainer = document.getElementById("ui-weapon-container");
+      _uiCache.ts = now;
+    }
+    return _uiCache;
   }
 
   function detectUIStates() {
-    const playBtn = document.getElementById("btn-start-mode-0");
-    const map = document.getElementById("big-map");
-    const escMenu = document.getElementById("ui-game-menu");
-    const weaponContainer = document.getElementById("ui-weapon-container");
+    const { playBtn, map, escMenu, weaponContainer } = getUIEls();
 
-    const mapOpen =
-      map &&
-      (displayValue(map) === "block" ||
-        map.style.display === "block" ||
-        isVisible(map));
-
-    const escOpen =
-      escMenu &&
-      (displayValue(escMenu) === "block" ||
-        escMenu.style.display === "block" ||
-        isVisible(escMenu));
+    const mapOpen = map && (map.style.display === "block" || (map.style.display === "" && map.offsetParent !== null));
+    const escOpen = escMenu && (escMenu.style.display === "block" || (escMenu.style.display === "" && escMenu.offsetParent !== null));
 
     let inGame = false;
-    if (weaponContainer) {
-      const style = getComputedStyle(weaponContainer);
-      const slot1 = document.getElementById("ui-weapon-id-1");
-      const slot2 = document.getElementById("ui-weapon-id-2");
-      const slot3 = document.getElementById("ui-weapon-id-3");
-      const slotsInteractive =
-        (slot1 && getComputedStyle(slot1).pointerEvents !== "none") ||
-        (slot2 && getComputedStyle(slot2).pointerEvents !== "none") ||
-        (slot3 && getComputedStyle(slot3).pointerEvents !== "none");
-      if (
-        style.display !== "none" &&
-        style.visibility !== "hidden" &&
-        style.opacity !== "0" &&
-        weaponContainer.offsetWidth > 0 &&
-        weaponContainer.offsetHeight > 0 &&
-        slotsInteractive &&
-        document.body.contains(weaponContainer)
-      ) {
-        inGame = true;
-      }
+    if (weaponContainer && document.body.contains(weaponContainer)) {
+      inGame = weaponContainer.offsetParent !== null;
     }
 
-    let menuOpen =
-      playBtn &&
-      (isVisible(playBtn) ||
-        displayValue(playBtn) === "block" ||
-        playBtn.offsetParent !== null ||
-        !playBtn.disabled);
-    if (inGame) menuOpen = false;
+    const menuOpen = !inGame && !!(playBtn && playBtn.offsetParent !== null);
 
-    uiState.menu = !!menuOpen;
-    uiState.ingame = !!inGame;
+    uiState.menu = menuOpen;
+    uiState.ingame = inGame;
     uiState.map = !!mapOpen;
     uiState.esc = !!escOpen;
   }
@@ -146,7 +102,6 @@
     return names[idx] !== undefined ? names[idx] : "Btn " + idx;
   }
 
-  // badge defs update dynamically based on swap XB setting
   function getPS_BADGE_DEFS() {
     if (settings && settings.swapXB)
       return [
@@ -211,10 +166,11 @@
     forceDesktop: false, // force desktop for mobile/handheld
     aimWithLeft: false, // left stick also aims when right stick idle
     aimLine: true, // line from screen center to crosshair
-    simpleUI: false, // strip most CSS decorations
+    simpleUI: false, // strip CSS
+    guiScale: 100, // UI scale percentage (50–150)
     aimSensitivity: 50, // aim sensitivity
     aimSmoothing: 5, // aim smoothing
-    freeLookSpeed: 5, // cursor speed in menu/map/esc free-look mode
+    freeLookSpeed: 5, // cursor speed
     leftDeadzone: 15, // deadzone
     rightDeadzone: 12, // deadzone
     reloadHold: {
@@ -256,10 +212,7 @@
     },
   };
 
-  // State
-  //    State
-  // State
-  // State
+
   let settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
   try {
     const saved = localStorage.getItem("ctrl_ext_settings_v2");
@@ -287,9 +240,10 @@
   let meleeHoldFired = false;
 
   let dropMenuOpen = false;
-  let autoLootPauseUntil = 0; // timestamp — auto loot suppressed until this
+  let autoLootPauseUntil = 0; 
 
-  // DROP ITEMS !
+  // Droppable items 
+  // Id is the element name and label is the menu name
 
   const DROP_ITEMS = [
     { id: "ui-scope-2xscope", label: "2x Scope" },
@@ -308,7 +262,6 @@
     { id: "ui-loot-308sub", label: ".308 Sub" },
     { id: "ui-loot-flare", label: "Flare" },
     { id: "ui-loot-45acp", label: ".45 ACP" },
-    // weapons — label is read from the DOM at render time
     { id: "ui-weapon-id-1", label: "Primary", isWeapon: true },
     { id: "ui-weapon-id-2", label: "Secondary", isWeapon: true },
     { id: "ui-weapon-id-3", label: "Melee", isWeapon: true },
@@ -324,7 +277,8 @@
   ];
   let currentScopeIdx = 0;
 
-  // X/B SWAP
+  // xb swap
+  // DISCAMLER there is a bug where the icons will not change alongside this setting but im too lazy to fix it
   function swapBtn(idx) {
     if (!settings.swapXB) return idx;
     if (idx === 0) return 1;
@@ -332,7 +286,6 @@
     return idx;
   }
 
-  // UTIL
 
   function deepMerge(base, override) {
     const out = Object.assign({}, base);
@@ -355,7 +308,7 @@
     } catch (e) {}
   }
 
-  // TOASTT
+  // notification toast (im very proud of this)
 
   function showToast(type, title, sub) {
     let c = document.getElementById("ctrl-toast-container");
@@ -380,29 +333,27 @@
     }, 3200);
   }
 
-  // CURSOR HIDE (yes ik this isnt the most ideal of the code but im too lazy to fix)
+  // CURSOR HIDE
   let cursorStyleEl = null;
+  let _cursorHideActive = null;
   function updateCursorHide() {
     if (!cursorStyleEl) {
       cursorStyleEl = document.createElement("style");
       cursorStyleEl.id = "ctrl-cursor-style";
       document.head.appendChild(cursorStyleEl);
     }
-    // only hide when ingame and no overlay (map/esc) open // (ALSO DOESNT WORK)
-    if (
+    const shouldHide =
       settings.hideCursor &&
       controllerIndex !== null &&
       uiState.ingame &&
       !uiState.map &&
-      !uiState.esc
-    ) {
-      cursorStyleEl.textContent = "* { cursor: none !important; }";
-    } else {
-      cursorStyleEl.textContent = "";
-    }
+      !uiState.esc;
+    if (shouldHide === _cursorHideActive) return; // no change — skip DOM write
+    _cursorHideActive = shouldHide;
+    cursorStyleEl.textContent = shouldHide ? "* { cursor: none !important; }" : "";
   }
 
-  // KEYBOARD BLOCK (also doesnt work the best)
+  // keyboard block Fixed bug which made moving and every keyboard functoin unusable with controller
   function handleKeyboardBlock(e) {
     if (
       !settings.blockKeyboard ||
@@ -412,6 +363,7 @@
       return;
     if (e.key === "F9") return;
     if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (!e.isTrusted) return;
     e.stopImmediatePropagation();
     e.preventDefault();
   }
@@ -584,7 +536,6 @@
       .forEach((el) => el.remove());
   }
 
-  // events bypass blockKeyboard and trigger the click listeners below
   let _menuA = false,
     _menuL = false,
     _menuD = false,
@@ -592,7 +543,7 @@
 
   function setupMenuKeyListeners() {
     document.addEventListener("keydown", (e) => {
-      if (e.isTrusted) return; // only our own synthetic events
+      if (e.isTrusted) return; // only our own controllere events
       if (e.key === "a") _menuA = true;
       if (e.key === "l") _menuL = true;
       if (e.key === "d") _menuD = true;
@@ -662,7 +613,7 @@
     }
   }
 
-  // GAMEPAD CONNECT / DISCONNECT
+  // Controller connect disconnect (mainly for toasts)
   window.addEventListener("gamepadconnected", (e) => {
     controllerIndex = e.gamepad.index;
     prevButtons = [];
@@ -717,8 +668,12 @@
     }
   }
 
-  // POLL LOOP
+  // loops
   function startLoop() {
+    let _lastInGame = false;
+    let _lastMap = false;
+    let _lastEsc = false;
+
     function loop() {
       animFrameId = requestAnimationFrame(loop);
       if (controllerIndex === null || !settings.enabled) return;
@@ -727,7 +682,14 @@
       if (!gp) return;
 
       isInGame = uiState.ingame;
-      updateCursorHide();
+
+      // Only call updateCursorHide when relevant state changes — not every frame that will lag you so much
+      if (isInGame !== _lastInGame || uiState.map !== _lastMap || uiState.esc !== _lastEsc) {
+        _lastInGame = isInGame;
+        _lastMap = uiState.map;
+        _lastEsc = uiState.esc;
+        updateCursorHide();
+      }
 
       const ldz = settings.leftDeadzone / 100;
       const rdz = settings.rightDeadzone / 100;
@@ -748,12 +710,14 @@
         handleMovement();
         handleMouseMode(gp);
         const rtHeld = (gp.buttons[settings.binds.btnFire]?.value || 0) > 0.5;
-        // only fire normally when actually ingame with no overlays
         if (isInGame && !uiState.map && !uiState.esc) {
-          if (settings.spamFire) setMouseButtonSpam(rtHeld);
+// Fix grenades being unusbale due to spam fire
+          const grenadeEl = document.getElementById("ui-weapon-id-4");
+          const grenadeActive = grenadeEl && grenadeEl.style.opacity === "1";
+          if (settings.spamFire && !grenadeActive) setMouseButtonSpam(rtHeld);
           else setMouseButtonHeld(rtHeld);
         } else {
-          // make sure fire state is cleared when not in direct play
+          // clear fire state when not ingame
           setMouseButtonHeld(false);
           setMouseButtonSpam(false);
         }
@@ -770,47 +734,33 @@
     return (val - Math.sign(val) * dz) / (1 - dz);
   }
 
-  // ============================================================
   // MOUSE MODE — context-aware aiming vs free cursor
   // free mode: menu open, map open, or esc open (same as mouse mode?!)
   // aim mode: ingame, no overlays
-  // ============================================================
+
   let freeCursorHeld = false;
+  const _mouseOpts = { bubbles: true, cancelable: true, view: window, clientX: 0, clientY: 0 };
+  const _mouseOptsBtn = { bubbles: true, cancelable: true, view: window, clientX: 0, clientY: 0, button: 0, buttons: 0 };
 
   function handleMouseMode(gp) {
     const freeMode = uiState.menu || uiState.map || uiState.esc;
 
     if (freeMode) {
-      // right stick (or left if right idle) moves cursor freely at slow speed
-      const rx = rightX,
-        ry = rightY;
-      const lx = leftX,
-        ly = leftY;
+      const rx = rightX, ry = rightY;
+      const lx = leftX, ly = leftY;
       const rightActive = Math.hypot(rx, ry) > 0.05;
       const mx = rightActive ? rx : lx;
       const my = rightActive ? ry : ly;
-      const speed = (settings.freeLookSpeed / 5) * 12; // tuned to feel smooth
+      const speed = (settings.freeLookSpeed / 5) * 12;
       if (Math.hypot(mx, my) > 0.05) {
-        currentMouseX = Math.max(
-          0,
-          Math.min(window.innerWidth, currentMouseX + mx * speed),
-        );
-        currentMouseY = Math.max(
-          0,
-          Math.min(window.innerHeight, currentMouseY + my * speed),
-        );
-        const opts = {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          clientX: currentMouseX,
-          clientY: currentMouseY,
-        };
-        document.dispatchEvent(new MouseEvent("mousemove", opts));
+        currentMouseX = Math.max(0, Math.min(window.innerWidth, currentMouseX + mx * speed));
+        currentMouseY = Math.max(0, Math.min(window.innerHeight, currentMouseY + my * speed));
+        _mouseOpts.clientX = currentMouseX;
+        _mouseOpts.clientY = currentMouseY;
+        document.dispatchEvent(new MouseEvent("mousemove", _mouseOpts));
         const el = document.elementFromPoint(currentMouseX, currentMouseY);
-        if (el) el.dispatchEvent(new MouseEvent("mousemove", opts));
+        if (el && el !== document.body) el.dispatchEvent(new MouseEvent("mousemove", _mouseOpts));
       }
-      // right trigger clicks in free-look mode
       const rtHeld = (gp.buttons[settings.binds.btnFire]?.value || 0) > 0.5;
       if (rtHeld && !freeCursorHeld) {
         freeCursorHeld = true;
@@ -843,7 +793,7 @@
     const mb = settings.menuBinds;
     const effIdx = swapBtn(idx);
 
-    // ---- MENU ONLY
+    // menu only
     if (!isInGame) {
       if (effIdx === mb.playSolo) {
         fireMenuCombo(0);
@@ -865,7 +815,7 @@
       return;
     }
 
-    // ---- IN GAME ----
+    // in-game stuffs
     if (isInGame) {
       if (effIdx === b.btnInteract) simulateKey("f", "keydown");
       if (effIdx === b.btnThrowable) simulateKey("4", "keydown");
@@ -874,8 +824,8 @@
       if (effIdx === b.btnL1) simulateKey("c", "keydown");
       if (effIdx === b.btnL3) simulateKey("t", "keydown");
 
-      // melee + hold-to-reload on same button
-      if (effIdx === b.btnMelee) {
+      // melee
+        if (effIdx === b.btnMelee) {
         meleeHoldFired = false;
         if (settings.reloadHold.enabled) {
           meleeHoldTimer = setTimeout(() => {
@@ -883,7 +833,6 @@
             simulateKey("r", "keydown");
             setTimeout(() => simulateKey("r", "keyup"), 80);
           }, settings.reloadHold.holdMs);
-          // don't fire melee yet — wait for release to decide tap vs hold
         } else {
           simulateKey("e", "keydown");
         }
@@ -906,7 +855,9 @@
       }
     }
 
-    // ---- UNIVERSAL
+
+
+
     if (effIdx === b.btnMap) simulateKey("m", "keydown");
 
     if (effIdx === b.btnMenu) {
@@ -929,7 +880,6 @@
     }
   }
 
-  // onButtonUp yes im so quirky
   function onButtonUp(idx) {
     if (dropMenuOpen) return;
     const b = settings.binds;
@@ -952,7 +902,6 @@
         meleeHoldTimer = null;
       }
       if (!meleeHoldFired) {
-        // tap = melee
         simulateKey("e", "keydown");
         setTimeout(() => simulateKey("e", "keyup"), 80);
       }
@@ -992,11 +941,9 @@
   function closeDropMenu() {
     dropMenuOpen = false;
     document.getElementById("ctrl-drop-menu")?.remove();
-    // suppress auto loot for 8.43 seconds after close for safety
     autoLootPauseUntil = Date.now() + 8430;
   }
-
-  // gets the live weapon name from the DOM for weapon slots
+//gets the name for the weapons so it isnt just primary weapon and secondary weapon
   function getDropItemLabel(item) {
     if (!item.isWeapon) return item.label;
     const el = document.getElementById(item.id);
@@ -1071,7 +1018,7 @@
     }
   }
 
-  // MOVEMENT — left stick -> WASD
+  // Movement
   let moveKeyState = { w: false, a: false, s: false, d: false };
 
   function handleMovement() {
@@ -1100,27 +1047,29 @@
     }
   }
 
-  // ============================================================
-  // AIMING — aim circle mode (ingame, no overlays)
-  // right stick always takes priority
-  // left stick aims only when aimWithLeft is on AND right stick is idle
-  // player can still MOVE while left stick is doing both walk+aim
-  // ============================================================
+  const _aimEventOpts = { bubbles: true, cancelable: true, view: window, clientX: 0, clientY: 0 };
+  let _cachedCanvas = null;
+  let _canvasCacheTs = 0;
+  function getCanvas() {
+    const now = Date.now();
+    if (!_cachedCanvas || now - _canvasCacheTs > 2000) {
+      _cachedCanvas = document.querySelector("canvas");
+      _canvasCacheTs = now;
+    }
+    return _cachedCanvas;
+  }
+
   function handleAiming() {
     const rightActive = Math.hypot(rightX, rightY) > 0.05;
     const leftActive = settings.aimWithLeft && Math.hypot(leftX, leftY) > 0.05;
 
-    // decide which stick drives the aim
-    let axX = 0,
-      axY = 0;
+    let axX = 0, axY = 0;
     if (rightActive) {
-      axX = rightX;
-      axY = rightY;
+      axX = rightX; axY = rightY;
     } else if (leftActive) {
-      axX = leftX;
-      axY = leftY;
+      axX = leftX; axY = leftY;
     } else {
-      return; // no aim input — keep angle where it is
+      return; // keep angle where it is
     }
 
     const sf = 0.08 + (settings.aimSmoothing / 100) * 0.12;
@@ -1136,23 +1085,18 @@
     currentMouseX += (tx - currentMouseX) * ls;
     currentMouseY += (ty - currentMouseY) * ls;
 
-    const opts = {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      clientX: currentMouseX,
-      clientY: currentMouseY,
-    };
-    document.dispatchEvent(new MouseEvent("mousemove", opts));
-    const el = document.elementFromPoint(currentMouseX, currentMouseY);
-    if (el) el.dispatchEvent(new MouseEvent("mousemove", opts));
-  }
+    // reuse opts, only update the coords
+    _aimEventOpts.clientX = currentMouseX;
+    _aimEventOpts.clientY = currentMouseY;
+    const ev = new MouseEvent("mousemove", _aimEventOpts);
+    document.dispatchEvent(ev);
 
-  // ============================================================
-  // AIM LINE — dashed line from screen center to crosshair
-  // only visible ingame, hidden when map or esc is open
-  // ============================================================
+    const canvas = getCanvas();
+    if (canvas) canvas.dispatchEvent(new MouseEvent("mousemove", _aimEventOpts));
+  }
+//aimline
   let aimLineEl = null;
+  let _aimLineEl = null; // the <line> element inside the SVG — reused, not rebuilt
 
   function ensureAimLine() {
     if (aimLineEl) return;
@@ -1160,6 +1104,12 @@
     aimLineEl.id = "ctrl-aim-line";
     aimLineEl.style.cssText =
       "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99996;overflow:visible;";
+    // Create the <line> once and keep it — setAttribute is far cheaper than innerHTML
+    _aimLineEl = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    _aimLineEl.setAttribute("stroke-width", "1.5");
+    _aimLineEl.setAttribute("stroke-opacity", "0.4");
+    _aimLineEl.setAttribute("stroke-dasharray", "5 5");
+    aimLineEl.appendChild(_aimLineEl);
     document.body.appendChild(aimLineEl);
   }
 
@@ -1170,7 +1120,7 @@
     }
     if (!aimLineEl) ensureAimLine();
 
-    // hide when not in active gameplay
+    // hide when no gameplay
     if (!isInGame || uiState.map || uiState.esc) {
       aimLineEl.style.display = "none";
       return;
@@ -1179,19 +1129,14 @@
     aimLineEl.style.display = "block";
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
-    const c = settings.crosshair;
-    aimLineEl.innerHTML = `<line
-      x1="${cx}" y1="${cy}"
-      x2="${currentMouseX}" y2="${currentMouseY}"
-      stroke="${c.color}"
-      stroke-width="1.5"
-      stroke-opacity="0.4"
-      stroke-dasharray="5 5"/>`;
+    _aimLineEl.setAttribute("x1", cx);
+    _aimLineEl.setAttribute("y1", cy);
+    _aimLineEl.setAttribute("x2", currentMouseX);
+    _aimLineEl.setAttribute("y2", currentMouseY);
+    _aimLineEl.setAttribute("stroke", settings.crosshair.color);
   }
 
-  // ============================================================
   // CROSSHAIR
-  // ============================================================
   let crosshairEl = null;
 
   function ensureCrosshair() {
@@ -1202,8 +1147,7 @@
   }
   function updateCrosshairPosition() {
     if (!crosshairEl || controllerIndex === null) return;
-    crosshairEl.style.left = currentMouseX + "px";
-    crosshairEl.style.top = currentMouseY + "px";
+    crosshairEl.style.transform = `translate(calc(${currentMouseX}px - 50%), calc(${currentMouseY}px - 50%))`;
   }
   function rebuildCrosshair() {
     crosshairEl?.remove();
@@ -1219,7 +1163,7 @@
     const sc = c.strokeColor || "#000000";
     const alpha = (c.opacity / 100).toFixed(2);
     crosshairEl.innerHTML = "";
-    crosshairEl.style.cssText = `position:fixed;pointer-events:none;z-index:99997;transform:translate(-50%,-50%);left:${currentMouseX}px;top:${currentMouseY}px;`;
+    crosshairEl.style.cssText = `position:fixed;pointer-events:none;z-index:99997;transform:translate(-50%,-50%);top:0;left:0;`;
 
     if (c.style === "dot") {
       const total = c.size + sw * 2;
@@ -1260,7 +1204,7 @@
     }
   }
 
-  // FIRE / CLICK
+  // fire and lclick
   let fireInterval = null;
   const heldMouseBtn = { held: false };
 
@@ -1268,9 +1212,10 @@
     if (held && !heldMouseBtn.held) {
       heldMouseBtn.held = true;
       fireMouseAt(currentMouseX, currentMouseY, "mousedown");
+// 33ms to reduce lag (16 ms will fry low end pcs like mine)
       fireInterval = setInterval(
         () => fireMouseAt(currentMouseX, currentMouseY, "mousedown"),
-        16,
+        33,
       );
     } else if (!held && heldMouseBtn.held) {
       heldMouseBtn.held = false;
@@ -1456,78 +1401,37 @@
     );
   }
 
-  // ============================================================
   // KEY SIMULATION
-  // IMPORTANT: keyCode is deprecated but survev still uses it
-  // dispatching to canvas too now — survev listens there
-  // ============================================================
+  const _keyCodeMap = {
+    w: 87, a: 65, s: 83, d: 68, e: 69, f: 70, h: 72, j: 74,
+    m: 77, r: 82, q: 81, c: 67, t: 84, l: 76,
+    1: 49, 2: 50, 3: 51, 4: 52, Escape: 27,
+  };
+  const _keyCodeStr = {
+    w: "KeyW", a: "KeyA", s: "KeyS", d: "KeyD", e: "KeyE", f: "KeyF",
+    h: "KeyH", j: "KeyJ", m: "KeyM", r: "KeyR", q: "KeyQ", c: "KeyC",
+    t: "KeyT", l: "KeyL", 1: "Digit1", 2: "Digit2", 3: "Digit3", 4: "Digit4",
+    Escape: "Escape",
+  };
+
   function simulateKey(key, type) {
-    const codeMap = {
-      w: "KeyW",
-      a: "KeyA",
-      s: "KeyS",
-      d: "KeyD",
-      e: "KeyE",
-      f: "KeyF",
-      h: "KeyH",
-      j: "KeyJ",
-      m: "KeyM",
-      r: "KeyR",
-      q: "KeyQ",
-      c: "KeyC",
-      t: "KeyT",
-      l: "KeyL",
-      1: "Digit1",
-      2: "Digit2",
-      3: "Digit3",
-      4: "Digit4",
-      Escape: "Escape",
-    };
-    const keyCodeMap = {
-      w: 87,
-      a: 65,
-      s: 83,
-      d: 68,
-      e: 69,
-      f: 70,
-      h: 72,
-      j: 74,
-      m: 77,
-      r: 82,
-      q: 81,
-      c: 67,
-      t: 84,
-      l: 76,
-      1: 49,
-      2: 50,
-      3: 51,
-      4: 52,
-      Escape: 27,
-    };
-    const code = codeMap[key] || `Key${key.toUpperCase()}`;
-    const keyCode = keyCodeMap[key] || key.charCodeAt(0);
+    const code = _keyCodeStr[key] || `Key${key.toUpperCase()}`;
+    const keyCode = _keyCodeMap[key] || key.charCodeAt(0);
     const ev = new KeyboardEvent(type, {
-      key,
-      code,
-      keyCode,
-      which: keyCode,
-      bubbles: true,
-      cancelable: true,
-      view: window,
+      key, code, keyCode, which: keyCode,
+      bubbles: true, cancelable: true, view: window,
     });
-    document.dispatchEvent(ev);
     window.dispatchEvent(ev);
-    document.body.dispatchEvent(ev);
-    const canvas = document.querySelector("canvas");
+    document.dispatchEvent(ev);
+    const canvas = getCanvas();
     if (canvas) canvas.dispatchEvent(ev);
   }
 
-  // AUTO LOOT AND AUTO DOOR
   function setupAutoLoot() {
     function burst() {
       if (!settings.autoLoot || controllerIndex === null) return;
-      if (dropMenuOpen) return; // never while drop menu open
-      if (Date.now() < autoLootPauseUntil) return; // paused after drop menu close
+      if (dropMenuOpen) return; 
+      if (Date.now() < autoLootPauseUntil) return; 
       const el = document.querySelector("#ui-interaction-outer");
       if (!el) return;
       for (let i = 0; i < 4; i++) {
@@ -1559,6 +1463,9 @@
         "strobe",
         "level",
         "military",
+        "pack",
+        "regular",
+        "small",
         "mine",
         "scope",
         "2x",
@@ -1567,8 +1474,8 @@
         "15x",
       ].some((w) => t.includes(w));
       if (alwaysPick) return true;
-      // auto open doors — only if feature is enabled
-      if (settings.autoOpenDoors && t.includes("open door")) return true;
+      // auto open doors
+            if (settings.autoOpenDoors && t.includes("open door")) return true;
       return false;
     }
     function watch() {
@@ -1745,7 +1652,8 @@
         </div>
         <div id="ctrl-settings-footer">
           <button class="ctrl-footer-btn save"  id="ctrl-save-btn">Save Settings</button>
-          <button class="ctrl-footer-btn reset" id="ctrl-reset-btn">Restore Defaults</button>
+          <button class="ctrl-footer-btn reset-binds" id="ctrl-reset-binds-btn">Restore Keybinds</button>
+          <button class="ctrl-footer-btn reset" id="ctrl-reset-btn">Restore Everything</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -1918,7 +1826,14 @@
   }
 
   function buildAnalogPanel() {
+    const scalePct = (((settings.guiScale - 50) / 100) * 100).toFixed(0);
     return `<div class="ctrl-tab-panel" id="ctrl-panel-analog">
+      <div class="ctrl-section-label">Interface</div>
+      <div class="ctrl-slider-row">
+        <div class="ctrl-slider-label">UI Scale<div class="ctrl-slider-sub">Resize the settings panel</div></div>
+        <input type="range" class="ctrl-slider" id="slider-guiScale" min="50" max="150" value="${settings.guiScale}" style="--pct:${scalePct}%">
+        <div class="ctrl-slider-val" id="val-guiScale">${settings.guiScale}%</div>
+      </div>
       <div class="ctrl-section-label">Aiming (In-Game Circle Mode)</div>
       ${makeSlider("aimSensitivity", "Aim Sensitivity", "Radius of aim circle", 1, 99, settings.aimSensitivity, "")}
       ${makeSlider("aimSmoothing", "Aim Smoothing", "Stick response curve", 1, 10, settings.aimSmoothing, "")}
@@ -2030,8 +1945,9 @@
 
     setupFeaturesEvents(overlay);
 
-    // analog sliders (flat settings keys)
+    // analog sliders
     [
+      { id: "guiScale", min: 50, max: 150, suffix: "%", key: "guiScale" },
       {
         id: "aimSensitivity",
         min: 1,
@@ -2066,6 +1982,7 @@
           "--pct",
           (((sl.value - min) / (max - min)) * 100).toFixed(0) + "%",
         );
+        if (key === "guiScale") applyGuiScale();
       });
     });
 
@@ -2093,6 +2010,7 @@
     });
 
     wireReloadSlider(overlay);
+    updateConflicts();
 
     overlay.querySelectorAll(".ctrl-style-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -2146,8 +2064,17 @@
         b.textContent = "Save Settings";
       }, 1500);
     });
+    overlay.querySelector("#ctrl-reset-binds-btn").addEventListener("click", () => {
+      if (confirm("Reset all keybinds to defaults?")) {
+        settings.binds = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.binds));
+        settings.menuBinds = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.menuBinds));
+        saveSettings();
+        buildSettingsUI();
+        openSettings();
+      }
+    });
     overlay.querySelector("#ctrl-reset-btn").addEventListener("click", () => {
-      if (confirm("Reset all settings to defaults?")) {
+      if (confirm("Reset ALL settings to defaults? This includes keybinds, crosshair, and everything else.")) {
         settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
         saveSettings();
         buildSettingsUI();
@@ -2246,7 +2173,6 @@
             .classList.add("active");
         attachBindListeners(overlay);
       }
-      // rebuild status reference
       const sp = overlay.querySelector("#ctrl-panel-status");
       if (sp) {
         const wasA = sp.classList.contains("active");
@@ -2336,11 +2262,69 @@
     btn.textContent = btnName(buttonIdx);
     listeningFor = null;
     if (category === "menuBinds") updateMenuBadges();
+    updateConflicts();
+  }
+
+  // Scan all bind buttons for duplicates within the same category and highlight them.
+  function updateConflicts() {
+    const overlay = document.getElementById("ctrl-settings-overlay");
+    if (!overlay) return;
+
+    const cats = ["binds", "menu-binds"];
+    cats.forEach(panelId => {
+      const panel = overlay.querySelector("#ctrl-panel-" + panelId);
+      if (!panel) return;
+
+      const countMap = {};
+      const btns = panel.querySelectorAll(".ctrl-bind-btn[data-key]");
+      btns.forEach(btn => {
+        const cat = btn.dataset.category;
+        const key = btn.dataset.key;
+        if (!cat || !key) return;
+        const val = settings[cat][key];
+        if (val === undefined || val === null) return;
+        countMap[val] = (countMap[val] || 0) + 1;
+      });
+
+      let hasConflict = false;
+      btns.forEach(btn => {
+        const cat = btn.dataset.category;
+        const key = btn.dataset.key;
+        if (!cat || !key) return;
+        const val = settings[cat][key];
+        const conflicted = val !== undefined && val !== null && countMap[val] > 1;
+        if (conflicted) hasConflict = true;
+        btn.classList.toggle("conflict", conflicted);
+        btn.closest(".ctrl-bind-row")?.classList.toggle("conflict-row", conflicted);
+      });
+
+      // Show/hide warning banner
+      let banner = panel.querySelector(".ctrl-conflict-banner");
+      if (hasConflict) {
+        if (!banner) {
+          banner = document.createElement("div");
+          banner.className = "ctrl-conflict-banner";
+          banner.textContent = "⚠ Conflict — two actions share the same button. Highlighted rows need fixing.";
+          panel.insertBefore(banner, panel.firstChild);
+        }
+      } else if (banner) {
+        banner.remove();
+      }
+    });
+  }
+
+  function applyGuiScale() {
+    const modal = document.getElementById("ctrl-settings-modal");
+    if (!modal) return;
+    const s = Math.max(0.5, Math.min(1.5, (settings.guiScale || 100) / 100));
+    modal.style.transform = `scale(${s})`;
+    modal.style.transformOrigin = "center center";
   }
 
   function openSettings() {
     settingsOpen = true;
     document.getElementById("ctrl-settings-overlay")?.classList.add("open");
+    applyGuiScale();
   }
   function closeSettings() {
     settingsOpen = false;
@@ -2348,7 +2332,7 @@
     document.getElementById("ctrl-settings-overlay")?.classList.remove("open");
   }
 
-  // UI INJECTION!
+  // UI injections
   function injectControllerButton() {
     if (document.querySelector(".controller-settings-btn")) return;
     const target = document.getElementById("start-bottom-right");
@@ -2396,12 +2380,10 @@
     )
       setupConsumableWheel();
     updateCursorHide();
-    removeKofi();
+    removeKofi(); // hi devs
   }).observe(document.body, { childList: true, subtree: true });
 
-  // ============================================================
-  // INIT
-  // ============================================================
+  //Init 
   setupMenuKeyListeners();
   injectControllerButton();
   injectMenuBadges();
@@ -2425,7 +2407,7 @@
     }
   });
 
-  // F9 opens settings from anywhere
+  // F9 opens settings 
   document.addEventListener("keydown", (e) => {
     if (e.key === "F9") {
       buildSettingsUI();
@@ -2433,7 +2415,7 @@
     }
   });
 
-  // auto-inject keybind code on load (leave existing logic intact)
+  // auto-inject keybind code on load
   (() => {
     if (window.__survevKeybindLoaded) return;
     window.__survevKeybindLoaded = true;
