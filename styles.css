@@ -1,8 +1,5 @@
-/* ============================================
-   SURVEV CONTROLLER EXTENSION v2.0 - STYLES
-   ============================================ */
 
-/* --- TOAST --- */
+/* i hate css comments so i removed all of them */
 #ctrl-toast-container {
   position: fixed; bottom: 24px; left: 24px; z-index: 99999;
   display: flex; flex-direction: column-reverse; gap: 8px; pointer-events: none;
@@ -27,7 +24,6 @@
 .ctrl-toast-title { font-size: 13px; font-weight: 800; }
 .ctrl-toast-sub { font-size: 11px; opacity: 0.82; font-weight: 500; }
 
-/* --- CONTROLLER BUTTON --- */
 .controller-settings-btn {
   cursor: pointer; background-size: 60% !important;
   background-repeat: no-repeat !important; background-position: center !important;
@@ -44,7 +40,6 @@
   50% { box-shadow: 0 0 10px #5cb85c, 0 0 20px #5cb85c44; }
 }
 
-/* --- MODAL OVERLAY --- */
 #ctrl-settings-overlay {
   display: none; position: fixed; inset: 0; z-index: 99998;
   background: rgba(0,0,0,0.7); backdrop-filter: blur(3px);
@@ -52,7 +47,6 @@
 }
 #ctrl-settings-overlay.open { display: flex; }
 
-/* --- MODAL --- */
 #ctrl-settings-modal {
   background: #3b5323; border: 3px solid #5a7a30; border-radius: 12px;
   width: 540px; max-width: 96vw; max-height: 86vh;
@@ -77,7 +71,6 @@
 }
 #ctrl-close-btn:hover { background: rgba(180,0,0,0.5); color: #fff; border-color: #e05555; }
 
-/* --- TABS --- */
 #ctrl-tabs { display: flex; background: #2e4219; border-bottom: 2px solid #5a7a30; flex-shrink: 0; overflow-x: auto; }
 .ctrl-tab {
   padding: 8px 13px; font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
@@ -88,7 +81,6 @@
 .ctrl-tab:hover { color: #c8e060; background: rgba(255,255,255,0.04); }
 .ctrl-tab.active { color: #d4e88a; border-bottom-color: #8ec832; background: rgba(255,255,255,0.06); }
 
-/* --- CONTENT --- */
 #ctrl-content { overflow-y: auto; flex: 1; padding: 14px 16px; scrollbar-width: thin; scrollbar-color: #5a7a30 #2e4219; }
 #ctrl-content::-webkit-scrollbar { width: 6px; }
 #ctrl-content::-webkit-scrollbar-track { background: #2e4219; }
@@ -96,7 +88,6 @@
 .ctrl-tab-panel { display: none; }
 .ctrl-tab-panel.active { display: block; }
 
-/* --- SECTION LABELS --- */
 .ctrl-section-label {
   font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
   color: #8aaa50; margin: 14px 0 6px 0; padding-bottom: 4px;
@@ -104,7 +95,6 @@
 }
 .ctrl-section-label:first-child { margin-top: 0; }
 
-/* --- BIND ROWS --- */
 .ctrl-bind-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 6px 10px; border-radius: 6px; margin-bottom: 3px;
@@ -134,7 +124,6 @@
   to { border-color: #ffdd44; box-shadow: 0 0 8px #ffaa0066; }
 }
 
-/* --- TOGGLE --- */
 .ctrl-toggle-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 9px 10px; border-radius: 6px; margin-bottom: 3px;
@@ -155,7 +144,6 @@
 .ctrl-switch input:checked + .ctrl-switch-slider { background: #3a6820; border-color: #8ec832; }
 .ctrl-switch input:checked + .ctrl-switch-slider::after { transform: translateX(18px); background: #8ec832; }
 
-/* --- SLIDERS --- */
 .ctrl-slider-row {
   display: flex; align-items: center; gap: 10px; padding: 8px 10px;
   border-radius: 6px; margin-bottom: 3px; background: rgba(0,0,0,0.2);
@@ -175,7 +163,29 @@
 .ctrl-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
 .ctrl-slider-val { font-size: 12px; font-weight: 700; color: #d4e88a; min-width: 34px; text-align: right; }
 
-/* --- FOOTER --- */
+.ctrl-bind-btn.conflict {
+  background: linear-gradient(180deg,#6a1a1a,#4a0e0e) !important;
+  border-color: #e04444 !important;
+  color: #ffaaaa !important;
+  animation: ctrlConflictPulse 1.2s infinite alternate;
+}
+@keyframes ctrlConflictPulse {
+  from { box-shadow: 0 0 4px #e0444466; }
+  to   { box-shadow: 0 0 10px #e04444aa, 0 0 3px #e04444; }
+}
+.ctrl-bind-row.conflict-row {
+  background: rgba(180,40,40,0.18) !important;
+  border-color: rgba(220,60,60,0.45) !important;
+}
+.ctrl-conflict-banner {
+  font-size: 11px; font-weight: 700; color: #ffbbbb;
+  background: rgba(160,30,30,0.35); border: 1.5px solid rgba(220,60,60,0.55);
+  border-radius: 6px; padding: 7px 10px; margin-bottom: 8px;
+  letter-spacing: 0.2px; line-height: 1.4;
+}
+
+#ctrl-settings-overlay { overflow: visible !important; }
+
 #ctrl-settings-footer {
   padding: 11px 16px; display: flex; gap: 10px;
   border-top: 2px solid #5a7a30; background: #2e4219; flex-shrink: 0;
@@ -188,9 +198,9 @@
 .ctrl-footer-btn:hover { filter: brightness(1.15); }
 .ctrl-footer-btn:active { transform: scale(0.97); }
 .ctrl-footer-btn.save { background: linear-gradient(180deg,#5a8c20,#3d6414); border-color: #8ec832; color: #d4e88a; }
+.ctrl-footer-btn.reset-binds { background: linear-gradient(180deg,#1a2e4a,#102430); border-color: #306a8a; color: #60a8c8; }
 .ctrl-footer-btn.reset { background: linear-gradient(180deg,#4a3a1a,#2e2410); border-color: #8a6a30; color: #c8a860; }
 
-/* --- STATUS BAR --- */
 #ctrl-status-bar {
   display: flex; align-items: center; gap: 8px; padding: 8px 12px;
   background: rgba(0,0,0,0.25); border-radius: 6px; margin-bottom: 12px;
@@ -200,7 +210,6 @@
 #ctrl-status-indicator.on { background: #5cb85c; box-shadow: 0 0 6px #5cb85c; }
 #ctrl-status-indicator.off { background: #c04040; }
 
-/* --- MENU BADGES (PS) --- */
 .ctrl-btn-badge {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 800;
@@ -218,7 +227,6 @@
 .ctrl-badge-xbox-x { background:#002288; border-color:#4488ff; color:#aaccff; }
 .ctrl-badge-xbox-y { background:#665500; border-color:#ffdd00; color:#ffee88; }
 
-/* --- FEATURE STATUS --- */
 .ctrl-feature-status {
   display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: 0.8px;
   text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
@@ -227,13 +235,11 @@
 }
 .ctrl-feature-status.off { background: rgba(180,60,60,0.2); color: #cc6666; border-color: rgba(180,60,60,0.4); }
 
-/* Warning note */
 .ctrl-warn-note {
   font-size: 10px; color: #e8a040; margin-top: 5px; padding: 4px 7px;
   background: rgba(200,120,0,0.12); border-radius: 4px; border: 1px solid rgba(200,120,0,0.3);
 }
 
-/* --- DROP MENU --- */
 #ctrl-drop-menu {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
   z-index: 99996; background: #2a3d18; border: 3px solid #5a7a30; border-radius: 10px;
@@ -258,13 +264,11 @@
 .ctrl-drop-item.selected { background: #4a6828; color: #d4e88a; border: 1px solid #8ec832; }
 .ctrl-drop-item.unavailable { opacity: 0.4; }
 
-/* --- CROSSHAIR --- */
 #ctrl-crosshair {
   position: fixed; pointer-events: none; z-index: 99997;
   transform: translate(-50%, -50%);
 }
 
-/* --- CROSSHAIR PANEL --- */
 .ctrl-color-swatch {
   width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
   border: 2px solid rgba(255,255,255,0.2); transition: transform 0.1s, border-color 0.1s;
@@ -273,5 +277,4 @@
 .ctrl-color-swatch:hover { transform: scale(1.15); }
 .ctrl-color-swatch.active { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 6px rgba(255,255,255,0.5); }
 
-/* --- CONSUMABLE WHEEL pointer events fix --- */
 #ui-consumables { pointer-events: none; }
