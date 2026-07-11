@@ -15,7 +15,7 @@ Play the browser battle royale using a gamepad instead of keyboard and mouse.
 
 # Overview
 
-Survev Controller is a browser extension that adds controller support to the browser game **Survev.io**.  
+Survev Controller is a browser extension that adds full controller support to the browser game **Survev.io**.  
 It allows players to use common gamepads such as Xbox and PlayStation controllers for movement, aiming, shooting, and other actions.
 
 The extension translates controller input into the controls used by the game, allowing Survev to be played comfortably on devices that rely on controllers.
@@ -72,8 +72,10 @@ The extension uses the browser **Gamepad API**, which means many controllers may
 - Xbox 360 Controller
 - Xbox One Controller
 - DualShock 4
+- DualShock 3
 
-Other controllers may work, but have not been officially tested.
+Other than that, any controller supported by the Gamepad API (which includes virtually every modern controller) will work with this extension. If you're unsure whether your controller is compatible, simply search for a gamepad tester on Google. If the tester detects your controller, it will work with this extension.
+
 
 ---
 
@@ -109,7 +111,7 @@ The extension does not modify the game or provide gameplay advantages. It simply
 
 ### What controllers are supported?
 
-Any controller compatible with the browser Gamepad API may work, although only a few have been tested.
+All controller compatible with the browser Gamepad API may work, although only a few have been tested.
 
 ---
 
