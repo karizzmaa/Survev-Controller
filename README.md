@@ -73,6 +73,7 @@ The extension uses the browser **Gamepad API**, which means many controllers may
 - Xbox One Controller
 - DualShock 4
 - DualShock 3
+- AYN Thor Gamepad
 
 Other than that, any controller supported by the Gamepad API (which includes virtually every modern controller) will work with this extension. If you're unsure whether your controller is compatible, simply search for a gamepad tester on Google. If the tester detects your controller, it will work with this extension.
 
