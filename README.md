@@ -145,14 +145,6 @@ Try the following:
 - check that the browser recognizes the controller
 - ensure no other software is blocking input
 
----
-
-### High CPU usage
-
-Controller polling may slightly increase CPU usage depending on browser behaviour.  
-Closing unused tabs or refreshing the page can sometimes improve performance.
-
----
 
 # Technical Details
 
