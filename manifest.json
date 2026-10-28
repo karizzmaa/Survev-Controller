@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Survev.io Controller",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Full controller support for Survev.io with customizable keybinds.",
 
   "icons": {
@@ -42,4 +42,3 @@
     }
   ]
 }
-// optimised for both chrome and firefox btw :p
