@@ -57,99 +57,61 @@
 
   let controllerType = "ps";
 
+  function activeIconType() {
+    if (settings.iconSet === "xbox" || settings.iconSet === "ps")
+      return settings.iconSet;
+    return controllerType;
+  }
+
+  function confirmSymbols() {
+    const t = activeIconType();
+    return settings.swapXB
+      ? { confirm: t === "xbox" ? "B" : "○", close: t === "xbox" ? "A" : "✕" }
+      : { confirm: t === "xbox" ? "A" : "✕", close: t === "xbox" ? "B" : "○" };
+  }
+
   const PS_BUTTON_NAMES = {
-    0: "✕ Cross",
-    1: "○ Circle",
-    2: "□ Square",
-    3: "△ Triangle",
-    4: "L1",
-    5: "R1",
-    6: "L2 (Trigger)",
-    7: "R2 (Trigger)",
-    8: "Share",
-    9: "Options",
-    10: "L3 (Click)",
-    11: "R3 (Click)",
-    12: "↑ D-Pad",
-    13: "↓ D-Pad",
-    14: "← D-Pad",
-    15: "→ D-Pad",
-    16: "PS Button",
+    0: "✕", 1: "○", 2: "□", 3: "△",
+    4: "L1", 5: "R1", 6: "L2", 7: "R2",
+    8: "Share", 9: "Options", 10: "L3", 11: "R3",
+    12: "↑", 13: "↓", 14: "←", 15: "→", 16: "PS",
   };
   const XBOX_BUTTON_NAMES = {
-    0: "A",
-    1: "B",
-    2: "X",
-    3: "Y",
-    4: "LB",
-    5: "RB",
-    6: "LT (Trigger)",
-    7: "RT (Trigger)",
-    8: "View",
-    9: "Menu",
-    10: "LS (Click)",
-    11: "RS (Click)",
-    12: "↑ D-Pad",
-    13: "↓ D-Pad",
-    14: "← D-Pad",
-    15: "→ D-Pad",
-    16: "Xbox Button",
+    0: "A", 1: "B", 2: "X", 3: "Y",
+    4: "LB", 5: "RB", 6: "LT", 7: "RT",
+    8: "View", 9: "Menu", 10: "LS", 11: "RS",
+    12: "↑", 13: "↓", 14: "←", 15: "→", 16: "Guide",
   };
 
   function btnName(idx) {
     const names =
-      controllerType === "xbox" ? XBOX_BUTTON_NAMES : PS_BUTTON_NAMES;
+      activeIconType() === "xbox" ? XBOX_BUTTON_NAMES : PS_BUTTON_NAMES;
     return names[idx] !== undefined ? names[idx] : "Btn " + idx;
   }
 
-  function getPS_BADGE_DEFS() {
-    if (settings && settings.swapXB)
+  function getBadgeDefs() {
+    const xbox = activeIconType() === "xbox";
+    const face = xbox
+      ? [
+          { symbol: "A", badgeClass: "ctrl-badge-xbox-a" },
+          { symbol: "B", badgeClass: "ctrl-badge-xbox-b" },
+          { symbol: "Y", badgeClass: "ctrl-badge-xbox-y" },
+        ]
+      : [
+          { symbol: "✕", badgeClass: "ctrl-badge-x" },
+          { symbol: "○", badgeClass: "ctrl-badge-circle" },
+          { symbol: "△", badgeClass: "ctrl-badge-triangle" },
+        ];
+    if (settings.swapXB)
       return [
-        { id: "btn-start-mode-0", badgeClass: "ctrl-badge-x", symbol: "○" },
-        {
-          id: "btn-start-mode-1",
-          badgeClass: "ctrl-badge-triangle",
-          symbol: "△",
-        },
-        {
-          id: "btn-start-mode-2",
-          badgeClass: "ctrl-badge-circle",
-          symbol: "✕",
-        },
+        { id: "btn-start-mode-0", badgeClass: face[1].badgeClass, symbol: face[1].symbol },
+        { id: "btn-start-mode-1", badgeClass: face[2].badgeClass, symbol: face[2].symbol },
+        { id: "btn-start-mode-2", badgeClass: face[0].badgeClass, symbol: face[0].symbol },
       ];
     return [
-      { id: "btn-start-mode-0", badgeClass: "ctrl-badge-x", symbol: "✕" },
-      {
-        id: "btn-start-mode-1",
-        badgeClass: "ctrl-badge-triangle",
-        symbol: "△",
-      },
-      { id: "btn-start-mode-2", badgeClass: "ctrl-badge-circle", symbol: "○" },
-    ];
-  }
-  function getXBOX_BADGE_DEFS() {
-    if (settings && settings.swapXB)
-      return [
-        {
-          id: "btn-start-mode-0",
-          badgeClass: "ctrl-badge-xbox-a",
-          symbol: "B",
-        },
-        {
-          id: "btn-start-mode-1",
-          badgeClass: "ctrl-badge-xbox-y",
-          symbol: "Y",
-        },
-        {
-          id: "btn-start-mode-2",
-          badgeClass: "ctrl-badge-xbox-b",
-          symbol: "A",
-        },
-      ];
-    return [
-      { id: "btn-start-mode-0", badgeClass: "ctrl-badge-xbox-a", symbol: "A" },
-      { id: "btn-start-mode-1", badgeClass: "ctrl-badge-xbox-y", symbol: "Y" },
-      { id: "btn-start-mode-2", badgeClass: "ctrl-badge-xbox-b", symbol: "B" },
+      { id: "btn-start-mode-0", badgeClass: face[0].badgeClass, symbol: face[0].symbol },
+      { id: "btn-start-mode-1", badgeClass: face[2].badgeClass, symbol: face[2].symbol },
+      { id: "btn-start-mode-2", badgeClass: face[1].badgeClass, symbol: face[1].symbol },
     ];
   }
 
@@ -163,6 +125,7 @@
     blockKeyboard: true, // self explanatory
     hideCursor: true, // self explanatory
     swapXB: false, // self explanatory
+    iconSet: "auto",
     forceDesktop: false, // force desktop for mobile/handheld
     aimWithLeft: false, // left stick also aims when right stick idle
     aimLine: true, // line from screen center to crosshair
@@ -319,8 +282,7 @@
     }
     const toast = document.createElement("div");
     toast.className = `ctrl-toast ${type}`;
-    const icon =
-      type === "connected" ? (controllerType === "xbox" ? "🟩" : "🎮") : "⛔";
+    const icon = type === "connected" ? "🎮" : "⛔";
     toast.innerHTML = `<div class="ctrl-toast-icon">${icon}</div><div class="ctrl-toast-text"><div class="ctrl-toast-title">${title}</div>${sub ? `<div class="ctrl-toast-sub">${sub}</div>` : ""}</div>`;
     c.appendChild(toast);
     requestAnimationFrame(() =>
@@ -524,8 +486,7 @@
     }
     simpleUIEl.textContent = settings.simpleUI
       ? `* { box-shadow:none!important; text-shadow:none!important; backdrop-filter:none!important; filter:none!important; transition:none!important; animation:none!important; }
-         #ctrl-settings-modal { background:#1a2a10!important; }
-         #ctrl-settings-header { background:#1a2a10!important; }`
+         #ctrl-settings-modal, #ctrl-settings-header, #ctrl-nav, #ctrl-settings-footer { background:#14171c!important; }`
       : "";
   }
 
@@ -956,24 +917,14 @@
     document.getElementById("ctrl-drop-menu")?.remove();
     const menu = document.createElement("div");
     menu.id = "ctrl-drop-menu";
-    const confirmBtn = settings.swapXB
-      ? controllerType === "xbox"
-        ? "B"
-        : "○"
-      : controllerType === "xbox"
-        ? "A"
-        : "✕";
-    const closeBtn = settings.swapXB
-      ? controllerType === "xbox"
-        ? "A"
-        : "✕"
-      : controllerType === "xbox"
-        ? "B"
-        : "○";
+    const { confirm, close } = confirmSymbols();
     menu.innerHTML = `
-      <div class="ctrl-drop-title">DROP ITEM</div>
-      <div class="ctrl-drop-hint">↑↓ Navigate  •  ${confirmBtn} = Drop  •  ${closeBtn} = Close</div>
-      <div class="ctrl-drop-list" id="ctrl-drop-list"></div>`;
+      <div class="ctrl-drop-head">
+        <span class="ctrl-drop-title">Drop Item</span>
+        <span class="ctrl-drop-keys"><span class="ctrl-key-chip">${confirm}</span><span>drop</span><span class="ctrl-key-chip">${close}</span><span>close</span></span>
+      </div>
+      <div class="ctrl-drop-list" id="ctrl-drop-list"></div>
+      <div class="ctrl-drop-foot"><span class="ctrl-key-chip">↑</span><span class="ctrl-key-chip">↓</span><span>navigate</span></div>`;
     document.body.appendChild(menu);
     renderDropList();
   }
@@ -1157,51 +1108,9 @@
   }
   function applyCrosshairStyle() {
     if (!crosshairEl) return;
-    const c = settings.crosshair;
-    const col = c.color;
-    const sw = c.strokeWidth || 0;
-    const sc = c.strokeColor || "#000000";
-    const alpha = (c.opacity / 100).toFixed(2);
     crosshairEl.innerHTML = "";
     crosshairEl.style.cssText = `position:fixed;pointer-events:none;z-index:99997;transform:translate(-50%,-50%);top:0;left:0;`;
-
-    if (c.style === "dot") {
-      const total = c.size + sw * 2;
-      crosshairEl.innerHTML = `<svg width="${total}" height="${total}" style="opacity:${alpha};display:block;">
-        ${sw > 0 ? `<circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2 + sw}" fill="${sc}"/>` : ""}
-        <circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2}" fill="${col}"/></svg>`;
-    } else if (c.style === "circle") {
-      const r = c.size;
-      const dim = (r + c.thickness + sw) * 2 + 2;
-      const cx = dim / 2;
-      crosshairEl.innerHTML = `<svg width="${dim}" height="${dim}" style="opacity:${alpha};display:block;">
-        ${sw > 0 ? `<circle cx="${cx}" cy="${cx}" r="${r}" stroke="${sc}" stroke-width="${c.thickness + sw * 2}" fill="none"/>` : ""}
-        <circle cx="${cx}" cy="${cx}" r="${r}" stroke="${col}" stroke-width="${c.thickness}" fill="none"/></svg>`;
-    } else {
-      const g = c.gap,
-        s = c.size,
-        t = c.thickness;
-      const w = (s + g) * 2 + t + sw * 2,
-        cx = w / 2,
-        cy = w / 2;
-      const line = (x1, y1, x2, y2) =>
-        (sw > 0
-          ? `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${sc}" stroke-width="${t + sw * 2}" stroke-linecap="round"/>`
-          : "") +
-        `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${t}" stroke-linecap="round"/>`;
-      const lines =
-        line(cx, sw, cx, cy - g) +
-        line(cx, cy + g, cx, w - sw) +
-        line(sw, cy, cx - g, cy) +
-        line(cx + g, cy, w - sw, cy);
-      const dotPart =
-        c.style === "crossdot"
-          ? (sw > 0
-              ? `<circle cx="${cx}" cy="${cy}" r="${t + sw}" fill="${sc}"/>`
-              : "") + `<circle cx="${cx}" cy="${cy}" r="${t}" fill="${col}"/>`
-          : "";
-      crosshairEl.innerHTML = `<svg width="${w}" height="${w}" style="opacity:${alpha};display:block;">${lines}${dotPart}</svg>`;
-    }
+    crosshairEl.innerHTML = crosshairSvg(settings.crosshair);
   }
 
   // fire and lclick
@@ -1589,271 +1498,28 @@
 
   // SETTINGS UI
   const ALL_BIND_DEFS = [
-    { key: "btnInteract", label: "Interact", sub: "F key" },
-    { key: "btnThrowable", label: "Throwable", sub: "4 key" },
-    {
-      key: "btnMelee",
-      label: "Melee / Reload",
-      sub: "Tap = melee (E), Hold = reload (R)",
-    },
-    { key: "btnPickupOther", label: "Swap Weapon", sub: "J key" },
-    { key: "btnFire", label: "Fire", sub: "Hold trigger to shoot" },
-    { key: "btnR1", label: "R1 / RB", sub: "Q key" },
-    { key: "btnL1", label: "L1 / LB", sub: "C key" },
-    { key: "btnConsWheel", label: "Heal / Cons Wheel", sub: "Dpad down" },
-    { key: "btnDpadUp", label: "D-Pad Up", sub: "Med Kit (wheel off)" },
-    {
-      key: "btnDpadLeft",
-      label: "D-Pad Left",
-      sub: "Scope cycle (wheel on) / Soda",
-    },
-    {
-      key: "btnDpadRight",
-      label: "D-Pad Right",
-      sub: "Scope other way / Painkiller",
-    },
-    { key: "btnMap", label: "Map", sub: "M key" },
+    { key: "btnInteract", label: "Interact", sub: "F" },
+    { key: "btnThrowable", label: "Throwable", sub: "4" },
+    { key: "btnMelee", label: "Melee / Reload", sub: "Tap melee · hold reload" },
+    { key: "btnPickupOther", label: "Swap Weapon", sub: "J" },
+    { key: "btnFire", label: "Fire", sub: "Hold to shoot" },
+    { key: "btnR1", label: "R1 / RB", sub: "Q" },
+    { key: "btnL1", label: "L1 / LB", sub: "C" },
+    { key: "btnConsWheel", label: "Heal / Wheel", sub: "D-Pad down, hold" },
+    { key: "btnDpadUp", label: "D-Pad Up", sub: "Med kit when wheel is off" },
+    { key: "btnDpadLeft", label: "D-Pad Left", sub: "Scope cycle / soda" },
+    { key: "btnDpadRight", label: "D-Pad Right", sub: "Scope cycle / pills" },
+    { key: "btnMap", label: "Map", sub: "M" },
     { key: "btnMenu", label: "Menu / Esc", sub: "" },
-    { key: "btnCircle", label: "Quit confirm", sub: "○ / B  (after esc only)" },
-    { key: "btnL3", label: "L3 Stick Click", sub: "T key" },
-    { key: "btnR3", label: "R3 Stick Click", sub: "Toggle drop item menu" },
+    { key: "btnCircle", label: "Quit Confirm", sub: "After pressing Esc" },
+    { key: "btnL3", label: "L3 Click", sub: "T" },
+    { key: "btnR3", label: "R3 Click", sub: "Opens drop menu" },
   ];
   const MENU_BIND_DEFS = [
     { key: "playSolo", label: "Play Solo" },
     { key: "playDuo", label: "Play Duo" },
     { key: "playSquad", label: "Play Squad" },
   ];
-
-  function buildSettingsUI() {
-    document.getElementById("ctrl-settings-overlay")?.remove();
-    const overlay = document.createElement("div");
-    overlay.id = "ctrl-settings-overlay";
-    overlay.innerHTML = `
-      <div id="ctrl-settings-modal" role="dialog">
-        <div id="ctrl-settings-header">
-          <h2>Controller Settings</h2>
-          <button id="ctrl-close-btn" title="Close">✕</button>
-        </div>
-        <div id="ctrl-tabs">
-          <div class="ctrl-tab active" data-tab="status">Status</div>
-          <div class="ctrl-tab" data-tab="binds">Binds</div>
-          <div class="ctrl-tab" data-tab="menu-binds">Menu</div>
-          <div class="ctrl-tab" data-tab="features">Features</div>
-          <div class="ctrl-tab" data-tab="analog">Analog</div>
-          <div class="ctrl-tab" data-tab="crosshair">Crosshair</div>
-        </div>
-        <div id="ctrl-content">
-          ${buildStatusPanel()}
-          ${buildBindsPanel()}
-          ${buildMenuBindsPanel()}
-          ${buildFeaturesPanel()}
-          ${buildAnalogPanel()}
-          ${buildCrosshairPanel()}
-        </div>
-        <div id="ctrl-settings-footer">
-          <button class="ctrl-footer-btn save"  id="ctrl-save-btn">Save Settings</button>
-          <button class="ctrl-footer-btn reset-binds" id="ctrl-reset-binds-btn">Restore Keybinds</button>
-          <button class="ctrl-footer-btn reset" id="ctrl-reset-btn">Restore Everything</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    setupSettingsEvents(overlay);
-    applyCrosshairStyle();
-  }
-
-  function buildStatusPanel() {
-    const gpId =
-      controllerIndex !== null
-        ? (navigator.getGamepads()[controllerIndex]?.id?.slice(0, 46) ||
-            "Connected") + ` [${controllerType.toUpperCase()}]`
-        : "No controller detected";
-    const xbtn = settings.swapXB
-      ? controllerType === "xbox"
-        ? "B"
-        : "○"
-      : controllerType === "xbox"
-        ? "A"
-        : "✕";
-    const r =
-      controllerType === "xbox"
-        ? `<b style="color:#c8d8a0">Left Stick</b> → Move &nbsp;<b style="color:#c8d8a0">Right Stick</b> → Aim<br>
-         <b style="color:#c8d8a0">RT</b> → Fire &nbsp;<b style="color:#c8d8a0">LT</b> → Swap Weapon<br>
-         <b style="color:#c8d8a0">${xbtn}</b> → Interact &nbsp;<b style="color:#c8d8a0">Y</b> → Throwable &nbsp;<b style="color:#c8d8a0">X</b> → Melee/Reload<br>
-         <b style="color:#c8d8a0">RB</b> → Q &nbsp;<b style="color:#c8d8a0">LB</b> → C<br>
-         <b style="color:#c8d8a0">↓ Dpad</b> → Heal/Wheel &nbsp;<b style="color:#c8d8a0">← Dpad</b> → Scope Cycle<br>
-         <b style="color:#c8d8a0">LS</b> → T &nbsp;<b style="color:#c8d8a0">RS</b> → Drop Menu<br>
-         <b style="color:#c8d8a0">View</b> → Map &nbsp;<b style="color:#c8d8a0">Menu</b> → Esc`
-        : `<b style="color:#c8d8a0">Left Stick</b> → Move &nbsp;<b style="color:#c8d8a0">Right Stick</b> → Aim<br>
-         <b style="color:#c8d8a0">R2</b> → Fire &nbsp;<b style="color:#c8d8a0">L2</b> → Swap Weapon<br>
-         <b style="color:#c8d8a0">${xbtn}</b> → Interact &nbsp;<b style="color:#c8d8a0">△</b> → Throwable &nbsp;<b style="color:#c8d8a0">□</b> → Melee/Reload<br>
-         <b style="color:#c8d8a0">R1</b> → Q &nbsp;<b style="color:#c8d8a0">L1</b> → C<br>
-         <b style="color:#c8d8a0">↓ Dpad</b> → Heal/Wheel &nbsp;<b style="color:#c8d8a0">← Dpad</b> → Scope Cycle<br>
-         <b style="color:#c8d8a0">L3</b> → T &nbsp;<b style="color:#c8d8a0">R3</b> → Drop Menu<br>
-         <b style="color:#c8d8a0">Share</b> → Map &nbsp;<b style="color:#c8d8a0">Options</b> → Esc`;
-    return `<div class="ctrl-tab-panel active" id="ctrl-panel-status">
-      <div id="ctrl-status-bar"><div id="ctrl-status-indicator" class="${controllerIndex !== null ? "on" : "off"}"></div><div id="ctrl-status-text">${gpId}</div></div>
-      <div class="ctrl-section-label">Master Toggle</div>
-      <div class="ctrl-toggle-row">
-        <div><div class="ctrl-toggle-label">Controller Support</div><div class="ctrl-toggle-sub">Turns everything on/off</div></div>
-        <label class="ctrl-switch"><input type="checkbox" id="toggle-enabled" ${settings.enabled ? "checked" : ""}><span class="ctrl-switch-slider"></span></label>
-      </div>
-      <div class="ctrl-section-label">Controls Reference</div>
-      <div style="font-size:11px;color:#8aaa50;line-height:1.8;padding:8px 10px;background:rgba(0,0,0,0.2);border-radius:6px;border:1px solid rgba(90,122,48,0.25);">${r}</div>
-    </div>`;
-  }
-
-  function buildBindsPanel() {
-    const rows = ALL_BIND_DEFS.map(
-      (def) => `
-      <div class="ctrl-bind-row">
-        <div class="ctrl-bind-label">${def.label}${def.sub ? `<div class="ctrl-bind-sublabel">${def.sub}</div>` : ""}</div>
-        <button class="ctrl-bind-btn" data-category="binds" data-key="${def.key}">${btnName(settings.binds[def.key])}</button>
-      </div>`,
-    ).join("");
-    return `<div class="ctrl-tab-panel" id="ctrl-panel-binds">
-      <div class="ctrl-section-label">Game Keybinds — click then press controller button to rebind</div>
-      ${rows}
-    </div>`;
-  }
-
-  function buildMenuBindsPanel() {
-    const rows = MENU_BIND_DEFS.map(
-      (def) => `
-      <div class="ctrl-bind-row">
-        <div class="ctrl-bind-label">${def.label}</div>
-        <button class="ctrl-bind-btn" data-category="menuBinds" data-key="${def.key}">${btnName(settings.menuBinds[def.key])}</button>
-      </div>`,
-    ).join("");
-    return `<div class="ctrl-tab-panel" id="ctrl-panel-menu-binds">
-      <div class="ctrl-section-label">Main Menu Binds</div>
-      ${rows}
-      <div style="font-size:10px;color:#6a8a40;margin-top:8px;">Only active on the main menu, not in-game.</div>
-    </div>`;
-  }
-
-  function makeToggleRow(id, label, sub, checked) {
-    return `<div class="ctrl-toggle-row">
-      <div><div class="ctrl-toggle-label">${label} <span class="ctrl-feature-status ${checked ? "" : "off"}">${checked ? "ON" : "OFF"}</span></div>
-      <div class="ctrl-toggle-sub">${sub}</div></div>
-      <label class="ctrl-switch"><input type="checkbox" id="toggle-${id}" ${checked ? "checked" : ""}><span class="ctrl-switch-slider"></span></label>
-    </div>`;
-  }
-
-  function buildFeaturesPanel() {
-    const holdPct = (((settings.reloadHold.holdMs - 100) / 900) * 100).toFixed(
-      0,
-    );
-    const xLabel = controllerType === "xbox" ? "A/B" : "✕/○";
-    return `<div class="ctrl-tab-panel" id="ctrl-panel-features">
-
-      <div class="ctrl-section-label">Automation</div>
-      ${makeToggleRow("autoLoot", "Auto Loot", "Auto-picks up ammo, heals, grenades, scopes", settings.autoLoot)}
-      ${makeToggleRow("autoOpenDoors", "Auto Open Doors", "Automatically opens doors when nearby", settings.autoOpenDoors)}
-      <div class="ctrl-toggle-row">
-        <div>
-          <div class="ctrl-toggle-label">Consumable Wheel <span class="ctrl-feature-status ${settings.consumableWheel ? "" : "off"}">${settings.consumableWheel ? "ON" : "OFF"}</span></div>
-          <div class="ctrl-toggle-sub">Hold dpad down to open radial heal menu</div>
-          ${!settings.consumableWheel ? `<div class="ctrl-warn-note">⚠ Wheel OFF — Dpad controls direct heals.</div>` : ""}
-        </div>
-        <label class="ctrl-switch"><input type="checkbox" id="toggle-consumableWheel" ${settings.consumableWheel ? "checked" : ""}><span class="ctrl-switch-slider"></span></label>
-      </div>
-
-      <div class="ctrl-section-label">Combat</div>
-      ${makeToggleRow("spamFire", "Spam Fire", "Rapid clicks instead of hold — great for pistols / semi-auto", settings.spamFire)}
-      <div class="ctrl-toggle-row">
-        <div><div class="ctrl-toggle-label">Hold to Reload <span class="ctrl-feature-status ${settings.reloadHold.enabled ? "" : "off"}">${settings.reloadHold.enabled ? "ON" : "OFF"}</span></div>
-        <div class="ctrl-toggle-sub">Hold □/X past threshold to reload (R). Tap = melee (E).</div></div>
-        <label class="ctrl-switch"><input type="checkbox" id="toggle-reloadHold" ${settings.reloadHold.enabled ? "checked" : ""}><span class="ctrl-switch-slider"></span></label>
-      </div>
-      ${
-        settings.reloadHold.enabled
-          ? `
-      <div class="ctrl-slider-row">
-        <div class="ctrl-slider-label">Hold Threshold<div class="ctrl-slider-sub">ms before reload triggers</div></div>
-        <input type="range" class="ctrl-slider" id="slider-reloadHoldMs" min="100" max="1000" value="${settings.reloadHold.holdMs}" style="--pct:${holdPct}%">
-        <div class="ctrl-slider-val" id="val-reloadHoldMs">${settings.reloadHold.holdMs}ms</div>
-      </div>`
-          : ""
-      }
-
-      <div class="ctrl-section-label">Aiming</div>
-      ${makeToggleRow(
-        "aimWithLeft",
-        "Aim with Left Analog",
-        "Left stick also aims when right stick is idle. Right stick always wins. Walk still works.",
-        settings.aimWithLeft,
-      )}
-      ${makeToggleRow(
-        "aimLine",
-        "Aim Line",
-        "Dashed line from screen center to crosshair (ingame only, hides when map/esc open)",
-        settings.aimLine,
-      )}
-
-      <div class="ctrl-section-label">Controller Layout</div>
-      <div class="ctrl-toggle-row">
-        <div><div class="ctrl-toggle-label">${xLabel} Button Swap <span class="ctrl-feature-status ${settings.swapXB ? "" : "off"}">${settings.swapXB ? "ON" : "OFF"}</span></div>
-        <div class="ctrl-toggle-sub">Swaps Interact and Quit-confirm buttons. Updates badges and drop menu hints.</div></div>
-        <label class="ctrl-switch"><input type="checkbox" id="toggle-swapXB" ${settings.swapXB ? "checked" : ""}><span class="ctrl-switch-slider"></span></label>
-      </div>
-
-      <div class="ctrl-section-label">Input</div>
-      ${makeToggleRow("blockKeyboard", "Block Keyboard", "Disables keyboard while controller is connected", settings.blockKeyboard)}
-      ${makeToggleRow("hideCursor", "Hide Cursor In-Game", "Hides the mouse cursor during a match", settings.hideCursor)}
-
-      <div class="ctrl-section-label">Compatibility</div>
-      ${makeToggleRow(
-        "forceDesktop",
-        "Force Desktop Layout",
-        "Spoofs desktop UA, disables touch, forces mouse events. Reload page after toggling.",
-        settings.forceDesktop,
-      )}
-      ${makeToggleRow(
-        "simpleUI",
-        "Simple UI",
-        "Strips shadows, blur and animations. Useful on low-end devices.",
-        settings.simpleUI,
-      )}
-
-      <div class="ctrl-section-label">Drop Menu</div>
-      <div style="font-size:11px;color:#8aaa50;line-height:1.7;padding:8px 10px;background:rgba(0,0,0,0.2);border-radius:6px;border:1px solid rgba(90,122,48,0.25);">
-        Press <b style="color:#c8d8a0">R3/RS</b> to open. Navigate <b style="color:#c8d8a0">↑↓ Dpad</b>,
-        confirm <b style="color:#c8d8a0">${settings.swapXB ? (controllerType === "xbox" ? "B" : "○") : controllerType === "xbox" ? "A" : "✕"}</b>,
-        close <b style="color:#c8d8a0">${settings.swapXB ? (controllerType === "xbox" ? "A" : "✕") : controllerType === "xbox" ? "B" : "○"}</b>.
-        Auto-loot pauses for 8.4 s after close. 1x scope is not droppable.
-      </div>
-    </div>`;
-  }
-
-  function buildAnalogPanel() {
-    const scalePct = (((settings.guiScale - 50) / 100) * 100).toFixed(0);
-    return `<div class="ctrl-tab-panel" id="ctrl-panel-analog">
-      <div class="ctrl-section-label">Interface</div>
-      <div class="ctrl-slider-row">
-        <div class="ctrl-slider-label">UI Scale<div class="ctrl-slider-sub">Resize the settings panel</div></div>
-        <input type="range" class="ctrl-slider" id="slider-guiScale" min="50" max="150" value="${settings.guiScale}" style="--pct:${scalePct}%">
-        <div class="ctrl-slider-val" id="val-guiScale">${settings.guiScale}%</div>
-      </div>
-      <div class="ctrl-section-label">Aiming (In-Game Circle Mode)</div>
-      ${makeSlider("aimSensitivity", "Aim Sensitivity", "Radius of aim circle", 1, 99, settings.aimSensitivity, "")}
-      ${makeSlider("aimSmoothing", "Aim Smoothing", "Stick response curve", 1, 10, settings.aimSmoothing, "")}
-      <div class="ctrl-section-label">Free Cursor (Menu / Map / ESC)</div>
-      ${makeSlider("freeLookSpeed", "Cursor Speed", "Speed of cursor in free-look", 1, 10, settings.freeLookSpeed, "")}
-      <div class="ctrl-section-label">Deadzones</div>
-      ${makeSlider("leftDeadzone", "Left Stick Deadzone", "Movement stick", 1, 50, settings.leftDeadzone, "%")}
-      ${makeSlider("rightDeadzone", "Right Stick Deadzone", "Aim stick", 1, 50, settings.rightDeadzone, "%")}
-    </div>`;
-  }
-
-  function makeSlider(id, label, sub, min, max, val, suffix) {
-    const pct = (((val - min) / (max - min)) * 100).toFixed(0);
-    return `<div class="ctrl-slider-row">
-      <div class="ctrl-slider-label">${label}<div class="ctrl-slider-sub">${sub}</div></div>
-      <input type="range" class="ctrl-slider" id="slider-${id}" min="${min}" max="${max}" value="${val}" style="--pct:${pct}%">
-      <div class="ctrl-slider-val" id="val-${id}">${val}${suffix}</div>
-    </div>`;
-  }
-
   const CROSSHAIR_COLORS = [
     "#00ff88",
     "#ffffff",
@@ -1863,60 +1529,350 @@
     "#ff00ff",
     "#ff8800",
   ];
+  const NAV_ITEMS = [
+    { id: "general", label: "General" },
+    { id: "binds", label: "Binds" },
+    { id: "gameplay", label: "Gameplay" },
+    { id: "sensitivity", label: "Sensitivity" },
+    { id: "crosshair", label: "Crosshair" },
+  ];
+
+  let saveTimer = null;
+  function scheduleSave() {
+    if (saveTimer) return;
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      saveSettings();
+    }, 250);
+  }
+
+  function segControl(id, options, current) {
+    return (
+      `<div class="ctrl-seg" id="${id}">` +
+      options
+        .map(
+          (o) =>
+            `<button type="button" class="ctrl-seg-btn${o.value === current ? " active" : ""}" data-value="${o.value}">${o.label}</button>`,
+        )
+        .join("") +
+      `</div>`
+    );
+  }
+
+  function toggleRow(id, label, sub, checked) {
+    return `<div class="ctrl-row">
+      <div class="ctrl-row-text">
+        <div class="ctrl-row-label">${label}</div>
+        ${sub ? `<div class="ctrl-row-sub">${sub}</div>` : ""}
+      </div>
+      <label class="ctrl-switch"><input type="checkbox" id="toggle-${id}"${checked ? " checked" : ""}><span class="ctrl-switch-slider"></span></label>
+    </div>`;
+  }
+
+  function sliderRow(id, label, sub, min, max, val, suffix) {
+    const pct = max > min ? (((val - min) / (max - min)) * 100).toFixed(1) : "0";
+    return `<div class="ctrl-row ctrl-slider-row">
+      <div class="ctrl-slider-head">
+        <div class="ctrl-row-text">
+          <div class="ctrl-row-label">${label}</div>
+          ${sub ? `<div class="ctrl-row-sub">${sub}</div>` : ""}
+        </div>
+        <div class="ctrl-slider-val" id="val-${id}">${val}${suffix}</div>
+      </div>
+      <input type="range" class="ctrl-slider" id="slider-${id}" min="${min}" max="${max}" value="${val}" style="--pct:${pct}%">
+    </div>`;
+  }
+
+  function bindCell(category, def) {
+    const val = settings[category][def.key];
+    return `<div class="ctrl-bind-row">
+      <div class="ctrl-bind-info">
+        <div class="ctrl-row-label">${def.label}</div>
+        ${def.sub ? `<div class="ctrl-row-sub">${def.sub}</div>` : ""}
+      </div>
+      <button type="button" class="ctrl-bind-btn" data-category="${category}" data-key="${def.key}">${btnName(val)}</button>
+    </div>`;
+  }
+
+  function controlsRefRows() {
+    const xb = activeIconType() === "xbox";
+    const rows = [
+      ["Move", "L-Stick"],
+      ["Aim", "R-Stick"],
+      ["Fire", xb ? "RT" : "R2"],
+      ["Swap Weapon", xb ? "LT" : "L2"],
+      ["Interact", confirmSymbols().confirm],
+      ["Throwable", xb ? "Y" : "△"],
+      ["Melee / Reload", xb ? "X" : "□"],
+      [xb ? "RB" : "R1", "Q"],
+      [xb ? "LB" : "L1", "C"],
+      ["Heal / Wheel", "D-↓"],
+      ["Scope Cycle", "D-←"],
+      ["T Key", "L3"],
+      ["Drop Menu", "R3"],
+      ["Map", xb ? "View" : "Share"],
+      ["Menu", xb ? "Menu" : "Options"],
+    ];
+    return rows
+      .map(
+        ([label, key]) =>
+          `<div class="ctrl-ref-item"><span class="ctrl-key-chip">${key}</span><span>${label}</span></div>`,
+      )
+      .join("");
+  }
+
+  function crosshairSvg(c) {
+    const col = c.color;
+    const sw = c.strokeWidth || 0;
+    const sc = c.strokeColor || "#000000";
+    const alpha = (c.opacity / 100).toFixed(2);
+    if (c.style === "dot") {
+      const total = c.size + sw * 2;
+      return `<svg width="${total}" height="${total}" style="opacity:${alpha};display:block;">
+        ${sw > 0 ? `<circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2 + sw}" fill="${sc}"/>` : ""}
+        <circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2}" fill="${col}"/></svg>`;
+    }
+    if (c.style === "circle") {
+      const r = c.size;
+      const dim = (r + c.thickness + sw) * 2 + 2;
+      const cx = dim / 2;
+      return `<svg width="${dim}" height="${dim}" style="opacity:${alpha};display:block;">
+        ${sw > 0 ? `<circle cx="${cx}" cy="${cx}" r="${r}" stroke="${sc}" stroke-width="${c.thickness + sw * 2}" fill="none"/>` : ""}
+        <circle cx="${cx}" cy="${cx}" r="${r}" stroke="${col}" stroke-width="${c.thickness}" fill="none"/></svg>`;
+    }
+    const g = c.gap,
+      s = c.size,
+      t = c.thickness;
+    const w = (s + g) * 2 + t + sw * 2;
+    const cx = w / 2,
+      cy = w / 2;
+    const line = (x1, y1, x2, y2) =>
+      (sw > 0
+        ? `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${sc}" stroke-width="${t + sw * 2}" stroke-linecap="round"/>`
+        : "") +
+      `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${t}" stroke-linecap="round"/>`;
+    const lines =
+      line(cx, sw, cx, cy - g) +
+      line(cx, cy + g, cx, w - sw) +
+      line(sw, cy, cx - g, cy) +
+      line(cx + g, cy, w - sw, cy);
+    const dot =
+      c.style === "crossdot"
+        ? (sw > 0
+            ? `<circle cx="${cx}" cy="${cy}" r="${t + sw}" fill="${sc}"/>`
+            : "") + `<circle cx="${cx}" cy="${cy}" r="${t}" fill="${col}"/>`
+        : "";
+    return `<svg width="${w}" height="${w}" style="opacity:${alpha};display:block;">${lines}${dot}</svg>`;
+  }
+
+  function buildGeneralPanel() {
+    const t = activeIconType();
+    const swapLabel = t === "xbox" ? "Swap A / B" : "Swap ✕ / ○";
+    const gpId =
+      controllerIndex !== null
+        ? (navigator.getGamepads()[controllerIndex]?.id?.slice(0, 46) ||
+            "Connected") + ` [${controllerType.toUpperCase()}]`
+        : "No controller detected";
+    return `<div class="ctrl-panel active" id="ctrl-panel-general">
+      <div id="ctrl-status-card">
+        <div id="ctrl-status-indicator" class="${controllerIndex !== null ? "on" : "off"}"></div>
+        <div id="ctrl-status-text">${gpId}</div>
+      </div>
+      ${toggleRow("enabled", "Controller Support", "Master toggle — turns everything on or off", settings.enabled)}
+      <div class="ctrl-section">Controller</div>
+      <div class="ctrl-row ctrl-row-stack">
+        <div class="ctrl-row-text">
+          <div class="ctrl-row-label">Button Icons</div>
+          <div class="ctrl-row-sub">Symbols used across menus, badges and hints. Auto follows your controller.</div>
+        </div>
+        ${segControl(
+          "ctrl-iconset-seg",
+          [
+            { value: "auto", label: "Auto" },
+            { value: "xbox", label: "Xbox" },
+            { value: "ps", label: "PlayStation" },
+          ],
+          settings.iconSet || "auto",
+        )}
+      </div>
+      ${toggleRow(
+        "swapXB",
+        `<span id="ctrl-swap-label">${swapLabel}</span><span class="ctrl-chip${settings.swapXB ? "" : " off"}" id="ctrl-swap-chip">${settings.swapXB ? "ON" : "OFF"}</span>`,
+        "Swaps the interact and quit-confirm buttons.",
+        settings.swapXB,
+      )}
+      <div class="ctrl-section">Input</div>
+      ${toggleRow("blockKeyboard", "Block Keyboard", "Ignores keyboard input while a controller is connected", settings.blockKeyboard)}
+      ${toggleRow("hideCursor", "Hide Cursor In-Game", "Hides the mouse cursor during a match", settings.hideCursor)}
+      ${sliderRow("guiScale", "Menu Scale", "Size of this settings window", 50, 150, settings.guiScale, "%")}
+      <div class="ctrl-section">Compatibility</div>
+      ${toggleRow("forceDesktop", "Force Desktop Layout", "Spoofs desktop mode for handhelds and mobile. Reload the page after toggling.", settings.forceDesktop)}
+      ${toggleRow("simpleUI", "Simple UI", "Strips shadows, blur and animations for low-end devices", settings.simpleUI)}
+      <div class="ctrl-section">Controls</div>
+      <div id="ctrl-controls-ref" class="ctrl-ref-grid">${controlsRefRows()}</div>
+      <div class="ctrl-section">Reset</div>
+      <div class="ctrl-reset-row">
+        <button type="button" class="ctrl-ghost-btn" id="ctrl-reset-binds-btn">Reset Binds</button>
+        <button type="button" class="ctrl-ghost-btn danger" id="ctrl-reset-btn">Reset Everything</button>
+      </div>
+    </div>`;
+  }
+
+  function buildBindsPanel() {
+    const gameRows = ALL_BIND_DEFS.map((d) => bindCell("binds", d)).join("");
+    const menuRows = MENU_BIND_DEFS.map((d) => bindCell("menuBinds", d)).join(
+      "",
+    );
+    return `<div class="ctrl-panel" id="ctrl-panel-binds">
+      <div class="ctrl-hint-bar">Click an action, then press the controller button you want. Duplicates get flagged in red.</div>
+      <div class="ctrl-conflict-banner" id="ctrl-conflict-banner" style="display:none">Two actions share the same button — highlighted rows need fixing.</div>
+      <div class="ctrl-section">In-Game</div>
+      <div class="ctrl-bind-grid">${gameRows}</div>
+      <div class="ctrl-section">Main Menu</div>
+      <div class="ctrl-bind-grid">${menuRows}</div>
+      <div class="ctrl-footnote">Menu binds only work on the main menu.</div>
+    </div>`;
+  }
+
+  function buildGameplayPanel() {
+    const { confirm, close } = confirmSymbols();
+    return `<div class="ctrl-panel" id="ctrl-panel-gameplay">
+      <div class="ctrl-section">Automation</div>
+      ${toggleRow("autoLoot", "Auto Loot", "Picks up ammo, heals, throwables and scopes on contact", settings.autoLoot)}
+      ${toggleRow("autoOpenDoors", "Auto Open Doors", "Opens doors automatically when you walk into them", settings.autoOpenDoors)}
+      ${toggleRow(
+        "consumableWheel",
+        `<span id="ctrl-wheel-label">Consumable Wheel</span><span class="ctrl-chip${settings.consumableWheel ? "" : " off"}" id="ctrl-wheel-chip">${settings.consumableWheel ? "ON" : "OFF"}</span>`,
+        "Hold D-Pad down for a radial heal menu",
+        settings.consumableWheel,
+      )}
+      <div class="ctrl-warn-note" id="ctrl-wheel-warn" style="display:${settings.consumableWheel ? "none" : "block"}">Wheel is off — D-Pad heals directly: down bandage, up med kit, left soda, right pills.</div>
+      <div class="ctrl-section">Combat</div>
+      ${toggleRow("spamFire", "Spam Fire", "Rapid taps instead of hold — for pistols and semi-auto weapons", settings.spamFire)}
+      ${toggleRow(
+        "reloadHold",
+        `<span id="ctrl-reload-label">Hold to Reload</span><span class="ctrl-chip${settings.reloadHold.enabled ? "" : " off"}" id="ctrl-reload-chip">${settings.reloadHold.enabled ? "ON" : "OFF"}</span>`,
+        "Hold melee past the threshold to reload, tap to melee",
+        settings.reloadHold.enabled,
+      )}
+      <div id="ctrl-reload-slider" style="display:${settings.reloadHold.enabled ? "block" : "none"}">
+        ${sliderRow("reloadHoldMs", "Reload Threshold", "How long the hold lasts before reloading", 100, 1000, settings.reloadHold.holdMs, "ms")}
+      </div>
+      <div class="ctrl-section">Aiming</div>
+      ${toggleRow("aimWithLeft", "Aim with Left Stick", "Left stick also aims while the right stick is idle", settings.aimWithLeft)}
+      ${toggleRow("aimLine", "Aim Line", "Dashed line from screen center to the crosshair", settings.aimLine)}
+      <div class="ctrl-section">Drop Menu</div>
+      <div class="ctrl-hint-bar" id="ctrl-dropmenu-info">Press <b>R3</b> in-game to open. <span class="ctrl-key-chip">↑</span><span class="ctrl-key-chip">↓</span> navigate, <span class="ctrl-key-chip">${confirm}</span> drops, <span class="ctrl-key-chip">${close}</span> closes. Auto-loot pauses briefly after closing.</div>
+    </div>`;
+  }
+
+  function buildSensitivityPanel() {
+    return `<div class="ctrl-panel" id="ctrl-panel-sensitivity">
+      <div class="ctrl-section">Aiming</div>
+      ${sliderRow("aimSensitivity", "Aim Sensitivity", "Distance of the aim circle from screen center", 1, 150, settings.aimSensitivity, "")}
+      ${sliderRow("aimSmoothing", "Aim Smoothing", "Stick response curve", 1, 10, settings.aimSmoothing, "")}
+      <div class="ctrl-section">Free Cursor</div>
+      ${sliderRow("freeLookSpeed", "Cursor Speed", "Cursor speed in menus, map and pause screen", 1, 10, settings.freeLookSpeed, "")}
+      <div class="ctrl-section">Deadzones</div>
+      ${sliderRow("leftDeadzone", "Left Stick", "Movement stick deadzone", 1, 50, settings.leftDeadzone, "%")}
+      ${sliderRow("rightDeadzone", "Right Stick", "Aim stick deadzone", 1, 50, settings.rightDeadzone, "%")}
+    </div>`;
+  }
 
   function buildCrosshairPanel() {
     const c = settings.crosshair;
     const swatches = CROSSHAIR_COLORS.map(
       (col) =>
-        `<div class="ctrl-color-swatch${c.color === col ? " active" : ""}" data-color="${col}" style="background:${col}"></div>`,
+        `<button type="button" class="ctrl-swatch${c.color === col ? " active" : ""}" data-color="${col}" style="background:${col}"></button>`,
     ).join("");
-    return `<div class="ctrl-tab-panel" id="ctrl-panel-crosshair">
-      <div class="ctrl-section-label">Style</div>
-      <div class="ctrl-bind-row" style="flex-wrap:wrap;gap:6px;">
-        ${["cross", "dot", "circle", "crossdot"]
-          .map(
-            (s) =>
-              `<button class="ctrl-bind-btn ctrl-style-btn${c.style === s ? " active-style" : ""}" data-style="${s}" style="min-width:70px;flex:1">${s}</button>`,
-          )
-          .join("")}
-      </div>
-      <div class="ctrl-section-label">Color</div>
-      <div style="display:flex;gap:8px;padding:6px 0;flex-wrap:wrap;align-items:center;">
+    return `<div class="ctrl-panel" id="ctrl-panel-crosshair">
+      <div class="ctrl-section">Style</div>
+      ${segControl(
+        "ctrl-style-seg",
+        [
+          { value: "cross", label: "Cross" },
+          { value: "dot", label: "Dot" },
+          { value: "circle", label: "Circle" },
+          { value: "crossdot", label: "Cross + Dot" },
+        ],
+        c.style,
+      )}
+      <div class="ctrl-section">Color</div>
+      <div class="ctrl-swatch-row">
         ${swatches}
-        <input type="color" id="crosshair-color-picker" value="${c.color}" title="Custom color" style="width:28px;height:28px;border:none;background:none;cursor:pointer;padding:0;">
+        <input type="color" id="crosshair-color-picker" class="ctrl-color-input" value="${c.color}" title="Custom color">
       </div>
-      <div class="ctrl-section-label">Outline / Stroke</div>
-      <div style="display:flex;gap:8px;padding:4px 0 6px;align-items:center;">
-        <span style="font-size:11px;color:#8aaa50;min-width:80px;">Stroke Color</span>
-        <input type="color" id="crosshair-stroke-picker" value="${c.strokeColor || "#000000"}" style="width:28px;height:28px;border:none;background:none;cursor:pointer;padding:0;">
+      <div class="ctrl-section">Outline</div>
+      <div class="ctrl-row">
+        <div class="ctrl-row-text">
+          <div class="ctrl-row-label">Stroke Color</div>
+          <div class="ctrl-row-sub">Outline drawn around the crosshair</div>
+        </div>
+        <input type="color" id="crosshair-stroke-picker" class="ctrl-color-input" value="${c.strokeColor || "#000000"}">
       </div>
-      ${makeSlider("chStrokeWidth", "Stroke Width", "0 = no outline", 0, 5, c.strokeWidth || 0, "")}
-      <div class="ctrl-section-label">Size & Shape</div>
-      ${makeSlider("chSize", "Size", "Arm length / dot radius", 4, 30, c.size, "")}
-      ${makeSlider("chThickness", "Thickness", "Line width", 1, 6, c.thickness, "")}
-      ${makeSlider("chGap", "Gap", "Center gap size", 0, 16, c.gap, "")}
-      ${makeSlider("chOpacity", "Opacity", "Crosshair visibility", 10, 100, c.opacity, "%")}
-      <div class="ctrl-section-label">Preview</div>
+      ${sliderRow("chStrokeWidth", "Stroke Width", "0 = no outline", 0, 5, c.strokeWidth || 0, "")}
+      <div class="ctrl-section">Shape</div>
+      ${sliderRow("chSize", "Size", "Arm length or dot radius", 4, 30, c.size, "")}
+      ${sliderRow("chThickness", "Thickness", "Line width", 1, 6, c.thickness, "")}
+      ${sliderRow("chGap", "Center Gap", "", 0, 16, c.gap, "")}
+      ${sliderRow("chOpacity", "Opacity", "", 10, 100, c.opacity, "%")}
+      <div class="ctrl-section">Preview</div>
       <div id="crosshair-preview-box"></div>
     </div>`;
   }
 
-  // SETTINGS EVENTS
+  function buildSettingsUI() {
+    document.getElementById("ctrl-settings-overlay")?.remove();
+    const overlay = document.createElement("div");
+    overlay.id = "ctrl-settings-overlay";
+    overlay.innerHTML = `
+      <div id="ctrl-settings-modal" role="dialog">
+        <div id="ctrl-settings-header">
+          <div class="ctrl-header-title">Controller Settings</div>
+          <button type="button" id="ctrl-close-btn" title="Close (F9)">✕</button>
+        </div>
+        <div id="ctrl-body">
+          <nav id="ctrl-nav">${NAV_ITEMS.map(
+            (n, i) =>
+              `<button type="button" class="ctrl-nav-item${i === 0 ? " active" : ""}" data-tab="${n.id}">${n.label}</button>`,
+          ).join("")}</nav>
+          <div id="ctrl-content">
+            ${buildGeneralPanel()}
+            ${buildBindsPanel()}
+            ${buildGameplayPanel()}
+            ${buildSensitivityPanel()}
+            ${buildCrosshairPanel()}
+          </div>
+        </div>
+        <div id="ctrl-settings-footer">
+          <span class="ctrl-save-hint">Changes save automatically</span>
+          <button type="button" class="ctrl-primary-btn" id="ctrl-done-btn">Done</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    setupSettingsEvents(overlay);
+    applyCrosshairStyle();
+    applyGuiScale();
+  }
+
   function setupSettingsEvents(overlay) {
     overlay
       .querySelector("#ctrl-close-btn")
       .addEventListener("click", closeSettings);
-    overlay.addEventListener("click", (e) => {
+    overlay
+      .querySelector("#ctrl-done-btn")
+      .addEventListener("click", closeSettings);
+    overlay.addEventListener("mousedown", (e) => {
       if (e.target === overlay) closeSettings();
     });
 
-    overlay.querySelectorAll(".ctrl-tab").forEach((tab) => {
+    overlay.querySelectorAll(".ctrl-nav-item").forEach((tab) => {
       tab.addEventListener("click", () => {
         overlay
-          .querySelectorAll(".ctrl-tab")
+          .querySelectorAll(".ctrl-nav-item")
           .forEach((t) => t.classList.remove("active"));
         overlay
-          .querySelectorAll(".ctrl-tab-panel")
+          .querySelectorAll(".ctrl-panel")
           .forEach((p) => p.classList.remove("active"));
         tab.classList.add("active");
         overlay
@@ -1925,116 +1881,90 @@
       });
     });
 
-    overlay
-      .querySelector("#toggle-enabled")
-      ?.addEventListener("change", (e) => {
-        settings.enabled = e.target.checked;
-      });
-    overlay
-      .querySelector("#toggle-consumableWheel")
-      ?.addEventListener("change", (e) => {
-        settings.consumableWheel = e.target.checked;
-        rebuildFeaturesPanel(overlay);
-      });
-    overlay
-      .querySelector("#toggle-reloadHold")
-      ?.addEventListener("change", (e) => {
-        settings.reloadHold.enabled = e.target.checked;
-        rebuildFeaturesPanel(overlay);
-      });
-
-    setupFeaturesEvents(overlay);
-
-    // analog sliders
-    [
-      { id: "guiScale", min: 50, max: 150, suffix: "%", key: "guiScale" },
-      {
-        id: "aimSensitivity",
-        min: 1,
-        max: 150,
-        suffix: "",
-        key: "aimSensitivity",
-      }, // changed 99 to 150
-      { id: "aimSmoothing", min: 1, max: 10, suffix: "", key: "aimSmoothing" },
-      {
-        id: "freeLookSpeed",
-        min: 1,
-        max: 10,
-        suffix: "",
-        key: "freeLookSpeed",
-      },
-      { id: "leftDeadzone", min: 1, max: 50, suffix: "%", key: "leftDeadzone" },
-      {
-        id: "rightDeadzone",
-        min: 1,
-        max: 50,
-        suffix: "%",
-        key: "rightDeadzone",
-      },
-    ].forEach(({ id, min, max, suffix, key }) => {
-      const sl = overlay.querySelector(`#slider-${id}`);
-      const vl = overlay.querySelector(`#val-${id}`);
-      if (!sl) return;
-      sl.addEventListener("input", () => {
-        settings[key] = Number(sl.value);
-        if (vl) vl.textContent = sl.value + suffix;
-        sl.style.setProperty(
-          "--pct",
-          (((sl.value - min) / (max - min)) * 100).toFixed(0) + "%",
-        );
-        if (key === "guiScale") applyGuiScale();
+    overlay.querySelectorAll(".ctrl-switch input").forEach((input) => {
+      input.addEventListener("change", () => {
+        const id = input.id.replace("toggle-", "");
+        applyToggle(id, input.checked, overlay);
+        scheduleSave();
       });
     });
 
-    // crosshair sliders
-    [
-      { id: "chSize", key: "size", min: 4, max: 30, suffix: "" },
-      { id: "chThickness", key: "thickness", min: 1, max: 6, suffix: "" },
-      { id: "chGap", key: "gap", min: 0, max: 16, suffix: "" },
-      { id: "chOpacity", key: "opacity", min: 10, max: 100, suffix: "%" },
-      { id: "chStrokeWidth", key: "strokeWidth", min: 0, max: 5, suffix: "" },
-    ].forEach(({ id, key, min, max, suffix }) => {
-      const sl = overlay.querySelector(`#slider-${id}`);
-      const vl = overlay.querySelector(`#val-${id}`);
-      if (!sl) return;
-      sl.addEventListener("input", () => {
-        settings.crosshair[key] = Number(sl.value);
-        if (vl) vl.textContent = sl.value + suffix;
-        sl.style.setProperty(
-          "--pct",
-          (((sl.value - min) / (max - min)) * 100).toFixed(0) + "%",
-        );
-        rebuildCrosshair();
-        updateCrosshairPreview(overlay);
-      });
+    bindSlider(overlay, "guiScale", (v) => {
+      settings.guiScale = v;
+      applyGuiScale();
+    }, "%");
+    bindSlider(overlay, "aimSensitivity", (v) => {
+      settings.aimSensitivity = v;
+    });
+    bindSlider(overlay, "aimSmoothing", (v) => {
+      settings.aimSmoothing = v;
+    });
+    bindSlider(overlay, "freeLookSpeed", (v) => {
+      settings.freeLookSpeed = v;
+    });
+    bindSlider(overlay, "leftDeadzone", (v) => {
+      settings.leftDeadzone = v;
+    }, "%");
+    bindSlider(overlay, "rightDeadzone", (v) => {
+      settings.rightDeadzone = v;
+    }, "%");
+    bindSlider(overlay, "reloadHoldMs", (v) => {
+      settings.reloadHold.holdMs = v;
+    }, "ms");
+    bindSlider(overlay, "chSize", (v) => {
+      settings.crosshair.size = v;
+      refreshCrosshair(overlay);
+    });
+    bindSlider(overlay, "chThickness", (v) => {
+      settings.crosshair.thickness = v;
+      refreshCrosshair(overlay);
+    });
+    bindSlider(overlay, "chGap", (v) => {
+      settings.crosshair.gap = v;
+      refreshCrosshair(overlay);
+    });
+    bindSlider(overlay, "chOpacity", (v) => {
+      settings.crosshair.opacity = v;
+      refreshCrosshair(overlay);
+    }, "%");
+    bindSlider(overlay, "chStrokeWidth", (v) => {
+      settings.crosshair.strokeWidth = v;
+      refreshCrosshair(overlay);
     });
 
-    wireReloadSlider(overlay);
-    updateConflicts();
-
-    overlay.querySelectorAll(".ctrl-style-btn").forEach((btn) => {
+    overlay.querySelectorAll("#ctrl-iconset-seg .ctrl-seg-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
+        if (settings.iconSet === btn.dataset.value) return;
+        settings.iconSet = btn.dataset.value;
         overlay
-          .querySelectorAll(".ctrl-style-btn")
-          .forEach((b) => b.classList.remove("active-style"));
-        btn.classList.add("active-style");
-        settings.crosshair.style = btn.dataset.style;
-        rebuildCrosshair();
-        updateCrosshairPreview(overlay);
+          .querySelectorAll("#ctrl-iconset-seg .ctrl-seg-btn")
+          .forEach((b) => b.classList.toggle("active", b === btn));
+        refreshIconSet(overlay);
+        scheduleSave();
       });
     });
 
-    overlay.querySelectorAll(".ctrl-color-swatch").forEach((sw) => {
-      sw.addEventListener("click", () => {
+    overlay.querySelectorAll("#ctrl-style-seg .ctrl-seg-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        settings.crosshair.style = btn.dataset.value;
         overlay
-          .querySelectorAll(".ctrl-color-swatch")
-          .forEach((s) => s.classList.remove("active"));
-        sw.classList.add("active");
+          .querySelectorAll("#ctrl-style-seg .ctrl-seg-btn")
+          .forEach((b) => b.classList.toggle("active", b === btn));
+        refreshCrosshair(overlay);
+        scheduleSave();
+      });
+    });
+
+    overlay.querySelectorAll(".ctrl-swatch").forEach((sw) => {
+      sw.addEventListener("click", () => {
         settings.crosshair.color = sw.dataset.color;
+        overlay
+          .querySelectorAll(".ctrl-swatch")
+          .forEach((s) => s.classList.toggle("active", s === sw));
         const picker = overlay.querySelector("#crosshair-color-picker");
         if (picker) picker.value = sw.dataset.color;
-        rebuildCrosshair();
-        updateCrosshairPreview(overlay);
+        refreshCrosshair(overlay);
+        scheduleSave();
       });
     });
 
@@ -2042,216 +1972,179 @@
       .querySelector("#crosshair-color-picker")
       ?.addEventListener("input", (e) => {
         settings.crosshair.color = e.target.value;
-        rebuildCrosshair();
-        updateCrosshairPreview(overlay);
+        overlay
+          .querySelectorAll(".ctrl-swatch")
+          .forEach((s) => s.classList.remove("active"));
+        refreshCrosshair(overlay);
+        scheduleSave();
       });
     overlay
       .querySelector("#crosshair-stroke-picker")
       ?.addEventListener("input", (e) => {
         settings.crosshair.strokeColor = e.target.value;
-        rebuildCrosshair();
-        updateCrosshairPreview(overlay);
+        refreshCrosshair(overlay);
+        scheduleSave();
       });
 
-    updateCrosshairPreview(overlay);
-    attachBindListeners(overlay);
-
-    overlay.querySelector("#ctrl-save-btn").addEventListener("click", () => {
-      saveSettings();
-      const b = overlay.querySelector("#ctrl-save-btn");
-      b.textContent = "Saved!";
-      setTimeout(() => {
-        b.textContent = "Save Settings";
-      }, 1500);
-    });
-    overlay.querySelector("#ctrl-reset-binds-btn").addEventListener("click", () => {
-      if (confirm("Reset all keybinds to defaults?")) {
+    overlay
+      .querySelector("#ctrl-reset-binds-btn")
+      .addEventListener("click", () => {
+        if (!confirm("Reset all keybinds to defaults?")) return;
         settings.binds = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.binds));
-        settings.menuBinds = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.menuBinds));
+        settings.menuBinds = JSON.parse(
+          JSON.stringify(DEFAULT_SETTINGS.menuBinds),
+        );
         saveSettings();
         buildSettingsUI();
         openSettings();
-      }
-    });
+      });
     overlay.querySelector("#ctrl-reset-btn").addEventListener("click", () => {
-      if (confirm("Reset ALL settings to defaults? This includes keybinds, crosshair, and everything else.")) {
-        settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-        saveSettings();
-        buildSettingsUI();
-        openSettings();
+      if (!confirm("Reset ALL settings to defaults?")) return;
+      settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+      saveSettings();
+      buildSettingsUI();
+      openSettings();
+    });
+
+    attachBindListeners(overlay);
+    updateConflicts();
+    updateCrosshairPreview(overlay);
+  }
+
+  function applyToggle(id, on, overlay) {
+    switch (id) {
+      case "enabled":
+        settings.enabled = on;
+        break;
+      case "autoLoot":
+        settings.autoLoot = on;
+        break;
+      case "autoOpenDoors":
+        settings.autoOpenDoors = on;
+        break;
+      case "consumableWheel": {
+        settings.consumableWheel = on;
+        setChip(overlay, "#ctrl-wheel-chip", on);
+        const warn = overlay.querySelector("#ctrl-wheel-warn");
+        if (warn) warn.style.display = on ? "none" : "block";
+        break;
       }
+      case "spamFire":
+        settings.spamFire = on;
+        break;
+      case "reloadHold": {
+        settings.reloadHold.enabled = on;
+        setChip(overlay, "#ctrl-reload-chip", on);
+        const wrap = overlay.querySelector("#ctrl-reload-slider");
+        if (wrap) wrap.style.display = on ? "block" : "none";
+        break;
+      }
+      case "aimWithLeft":
+        settings.aimWithLeft = on;
+        break;
+      case "aimLine":
+        settings.aimLine = on;
+        if (!on && aimLineEl) aimLineEl.style.display = "none";
+        break;
+      case "swapXB":
+        settings.swapXB = on;
+        setChip(overlay, "#ctrl-swap-chip", on);
+        refreshIconSet(overlay);
+        break;
+      case "blockKeyboard":
+        settings.blockKeyboard = on;
+        break;
+      case "hideCursor":
+        settings.hideCursor = on;
+        updateCursorHide();
+        break;
+      case "forceDesktop":
+        settings.forceDesktop = on;
+        syncForceDesktop();
+        break;
+      case "simpleUI":
+        settings.simpleUI = on;
+        applySimpleUI();
+        break;
+    }
+  }
+
+  function setChip(overlay, sel, on) {
+    const chip = overlay.querySelector(sel);
+    if (!chip) return;
+    chip.textContent = on ? "ON" : "OFF";
+    chip.classList.toggle("off", !on);
+  }
+
+  function bindSlider(overlay, id, apply, suffix = "") {
+    const sl = overlay.querySelector("#slider-" + id);
+    const vl = overlay.querySelector("#val-" + id);
+    if (!sl) return;
+    const min = Number(sl.min),
+      max = Number(sl.max);
+    sl.addEventListener("input", () => {
+      const v = Number(sl.value);
+      apply(v);
+      if (vl) vl.textContent = v + suffix;
+      sl.style.setProperty(
+        "--pct",
+        (((v - min) / (max - min)) * 100).toFixed(1) + "%",
+      );
+      scheduleSave();
     });
   }
 
-  function wireReloadSlider(overlay) {
-    const rSlider = overlay.querySelector("#slider-reloadHoldMs");
-    const rVal = overlay.querySelector("#val-reloadHoldMs");
-    if (!rSlider) return;
-    rSlider.addEventListener("input", () => {
-      settings.reloadHold.holdMs = Number(rSlider.value);
-      if (rVal) rVal.textContent = rSlider.value + "ms";
-      rSlider.style.setProperty(
-        "--pct",
-        (((rSlider.value - 100) / 900) * 100).toFixed(0) + "%",
-      );
+  function refreshCrosshair(overlay) {
+    rebuildCrosshair();
+    updateCrosshairPreview(overlay);
+  }
+
+  function refreshIconSet(overlay) {
+    const t = activeIconType();
+    const swapLabel = overlay.querySelector("#ctrl-swap-label");
+    if (swapLabel)
+      swapLabel.textContent = t === "xbox" ? "Swap A / B" : "Swap ✕ / ○";
+    const ref = overlay.querySelector("#ctrl-controls-ref");
+    if (ref) ref.innerHTML = controlsRefRows();
+    const dropInfo = overlay.querySelector("#ctrl-dropmenu-info");
+    if (dropInfo) {
+      const { confirm, close } = confirmSymbols();
+      dropInfo.innerHTML = `Press <b>R3</b> in-game to open. <span class="ctrl-key-chip">↑</span><span class="ctrl-key-chip">↓</span> navigate, <span class="ctrl-key-chip">${confirm}</span> drops, <span class="ctrl-key-chip">${close}</span> closes. Auto-loot pauses briefly after closing.`;
+    }
+    overlay.querySelectorAll(".ctrl-bind-btn[data-key]").forEach((btn) => {
+      if (listeningFor && listeningFor.btn === btn) return;
+      const val = settings[btn.dataset.category]?.[btn.dataset.key];
+      if (val !== undefined) btn.textContent = btnName(val);
     });
+    updateMenuBadges();
   }
 
   function attachBindListeners(overlay) {
-    overlay
-      .querySelectorAll(".ctrl-bind-btn:not(.ctrl-style-btn)")
-      .forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (listeningFor) {
-            listeningFor.btn.classList.remove("listening");
-            listeningFor.btn.textContent = btnName(
-              settings[listeningFor.category][listeningFor.key],
-            );
-            listeningFor = null;
-          }
-          listeningFor = {
-            category: btn.dataset.category,
-            key: btn.dataset.key,
-            btn,
-          };
-          btn.classList.add("listening");
-          btn.textContent = "Press a button…";
-        });
+    overlay.querySelectorAll(".ctrl-bind-btn[data-key]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (listeningFor) {
+          const same = listeningFor.btn === btn;
+          cancelListening();
+          if (same) return;
+        }
+        listeningFor = {
+          category: btn.dataset.category,
+          key: btn.dataset.key,
+          btn,
+        };
+        btn.classList.add("listening");
+        btn.textContent = "Press…";
       });
-  }
-
-  function rebuildFeaturesPanel(overlay) {
-    const fp = overlay.querySelector("#ctrl-panel-features");
-    if (!fp) return;
-    const wasActive = fp.classList.contains("active");
-    fp.outerHTML = buildFeaturesPanel();
-    if (wasActive)
-      overlay.querySelector("#ctrl-panel-features").classList.add("active");
-    setupFeaturesEvents(overlay);
-    wireReloadSlider(overlay);
-  }
-
-  function setupFeaturesEvents(overlay) {
-    const bind = (id, fn) =>
-      overlay.querySelector(`#toggle-${id}`)?.addEventListener("change", fn);
-
-    bind("autoLoot", (e) => {
-      settings.autoLoot = e.target.checked;
-    });
-    bind("autoOpenDoors", (e) => {
-      settings.autoOpenDoors = e.target.checked;
-    });
-    bind("consumableWheel", (e) => {
-      settings.consumableWheel = e.target.checked;
-      rebuildFeaturesPanel(overlay);
-    });
-    bind("spamFire", (e) => {
-      settings.spamFire = e.target.checked;
-    });
-    bind("reloadHold", (e) => {
-      settings.reloadHold.enabled = e.target.checked;
-      rebuildFeaturesPanel(overlay);
-    });
-    bind("aimWithLeft", (e) => {
-      settings.aimWithLeft = e.target.checked;
-    });
-    bind("aimLine", (e) => {
-      settings.aimLine = e.target.checked;
-      if (!settings.aimLine && aimLineEl) aimLineEl.style.display = "none";
-    });
-    bind("swapXB", (e) => {
-      settings.swapXB = e.target.checked;
-      // rebuild menu binds so button labels update
-      const mbp = overlay.querySelector("#ctrl-panel-menu-binds");
-      if (mbp) {
-        const wasA = mbp.classList.contains("active");
-        mbp.outerHTML = buildMenuBindsPanel();
-        if (wasA)
-          overlay
-            .querySelector("#ctrl-panel-menu-binds")
-            .classList.add("active");
-        attachBindListeners(overlay);
-      }
-      const sp = overlay.querySelector("#ctrl-panel-status");
-      if (sp) {
-        const wasA = sp.classList.contains("active");
-        sp.outerHTML = buildStatusPanel();
-        if (wasA)
-          overlay.querySelector("#ctrl-panel-status").classList.add("active");
-        overlay
-          .querySelector("#toggle-enabled")
-          ?.addEventListener("change", (ev) => {
-            settings.enabled = ev.target.checked;
-          });
-      }
-      rebuildFeaturesPanel(overlay);
-      updateMenuBadges();
-    });
-    bind("blockKeyboard", (e) => {
-      settings.blockKeyboard = e.target.checked;
-    });
-    bind("hideCursor", (e) => {
-      settings.hideCursor = e.target.checked;
-      updateCursorHide();
-    });
-    bind("forceDesktop", (e) => {
-      settings.forceDesktop = e.target.checked;
-      syncForceDesktop();
-    });
-    bind("simpleUI", (e) => {
-      settings.simpleUI = e.target.checked;
-      applySimpleUI();
     });
   }
 
-  function updateCrosshairPreview(overlay) {
-    const box = overlay.querySelector("#crosshair-preview-box");
-    if (!box) return;
-    const c = settings.crosshair,
-      col = c.color,
-      sw = c.strokeWidth || 0,
-      sc = c.strokeColor || "#000000";
-    const alpha = (c.opacity / 100).toFixed(2);
-    let inner = "";
-    if (c.style === "dot") {
-      const total = c.size + sw * 2;
-      inner = `<svg width="${total}" height="${total}" style="opacity:${alpha};display:block;">
-        ${sw > 0 ? `<circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2 + sw}" fill="${sc}"/>` : ""}
-        <circle cx="${total / 2}" cy="${total / 2}" r="${c.size / 2}" fill="${col}"/></svg>`;
-    } else if (c.style === "circle") {
-      const r = c.size,
-        dim = (r + c.thickness + sw) * 2 + 2,
-        cx = dim / 2;
-      inner = `<svg width="${dim}" height="${dim}" style="opacity:${alpha};display:block;">
-        ${sw > 0 ? `<circle cx="${cx}" cy="${cx}" r="${r}" stroke="${sc}" stroke-width="${c.thickness + sw * 2}" fill="none"/>` : ""}
-        <circle cx="${cx}" cy="${cx}" r="${r}" stroke="${col}" stroke-width="${c.thickness}" fill="none"/></svg>`;
-    } else {
-      const g = c.gap,
-        s = c.size,
-        t = c.thickness,
-        w = (s + g) * 2 + t + sw * 2,
-        cx = w / 2,
-        cy = w / 2;
-      const line = (x1, y1, x2, y2) =>
-        (sw > 0
-          ? `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${sc}" stroke-width="${t + sw * 2}" stroke-linecap="round"/>`
-          : "") +
-        `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${t}" stroke-linecap="round"/>`;
-      const lines =
-        line(cx, sw, cx, cy - g) +
-        line(cx, cy + g, cx, w - sw) +
-        line(sw, cy, cx - g, cy) +
-        line(cx + g, cy, w - sw, cy);
-      const dot =
-        c.style === "crossdot"
-          ? (sw > 0
-              ? `<circle cx="${cx}" cy="${cy}" r="${t + sw}" fill="${sc}"/>`
-              : "") + `<circle cx="${cx}" cy="${cy}" r="${t}" fill="${col}"/>`
-          : "";
-      inner = `<svg width="${w}" height="${w}" style="opacity:${alpha};display:block;">${lines}${dot}</svg>`;
-    }
-    box.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:60px;background:rgba(0,0,0,0.4);border-radius:6px;border:1px solid rgba(90,122,48,0.3);">${inner}</div>`;
+  function cancelListening() {
+    if (!listeningFor) return;
+    listeningFor.btn.classList.remove("listening");
+    const val = settings[listeningFor.category]?.[listeningFor.key];
+    if (val !== undefined) listeningFor.btn.textContent = btnName(val);
+    listeningFor = null;
   }
 
   function finishListening(buttonIdx) {
@@ -2263,62 +2156,49 @@
     listeningFor = null;
     if (category === "menuBinds") updateMenuBadges();
     updateConflicts();
+    scheduleSave();
   }
 
-  // Scan all bind buttons for duplicates within the same category and highlight them.
   function updateConflicts() {
     const overlay = document.getElementById("ctrl-settings-overlay");
     if (!overlay) return;
-
-    const cats = ["binds", "menu-binds"];
-    cats.forEach(panelId => {
-      const panel = overlay.querySelector("#ctrl-panel-" + panelId);
-      if (!panel) return;
-
-      const countMap = {};
-      const btns = panel.querySelectorAll(".ctrl-bind-btn[data-key]");
-      btns.forEach(btn => {
-        const cat = btn.dataset.category;
-        const key = btn.dataset.key;
-        if (!cat || !key) return;
-        const val = settings[cat][key];
-        if (val === undefined || val === null) return;
-        countMap[val] = (countMap[val] || 0) + 1;
-      });
-
-      let hasConflict = false;
-      btns.forEach(btn => {
-        const cat = btn.dataset.category;
-        const key = btn.dataset.key;
-        if (!cat || !key) return;
-        const val = settings[cat][key];
-        const conflicted = val !== undefined && val !== null && countMap[val] > 1;
-        if (conflicted) hasConflict = true;
-        btn.classList.toggle("conflict", conflicted);
-        btn.closest(".ctrl-bind-row")?.classList.toggle("conflict-row", conflicted);
-      });
-
-      // Show/hide warning banner
-      let banner = panel.querySelector(".ctrl-conflict-banner");
-      if (hasConflict) {
-        if (!banner) {
-          banner = document.createElement("div");
-          banner.className = "ctrl-conflict-banner";
-          banner.textContent = "⚠ Conflict — two actions share the same button. Highlighted rows need fixing.";
-          panel.insertBefore(banner, panel.firstChild);
-        }
-      } else if (banner) {
-        banner.remove();
-      }
+    const panel = overlay.querySelector("#ctrl-panel-binds");
+    if (!panel) return;
+    const btns = panel.querySelectorAll(".ctrl-bind-btn[data-key]");
+    const counts = {};
+    btns.forEach((btn) => {
+      const val = settings[btn.dataset.category]?.[btn.dataset.key];
+      if (val === undefined || val === null) return;
+      const id = btn.dataset.category + ":" + val;
+      counts[id] = (counts[id] || 0) + 1;
     });
+    let hasConflict = false;
+    btns.forEach((btn) => {
+      const val = settings[btn.dataset.category]?.[btn.dataset.key];
+      const bad =
+        val !== undefined &&
+        val !== null &&
+        counts[btn.dataset.category + ":" + val] > 1;
+      if (bad) hasConflict = true;
+      btn.classList.toggle("conflict", bad);
+      btn.closest(".ctrl-bind-row")?.classList.toggle("conflict-row", bad);
+    });
+    const banner = panel.querySelector("#ctrl-conflict-banner");
+    if (banner) banner.style.display = hasConflict ? "block" : "none";
+  }
+
+  function updateCrosshairPreview(overlay) {
+    const box = overlay.querySelector("#crosshair-preview-box");
+    if (!box) return;
+    box.innerHTML = crosshairSvg(settings.crosshair);
   }
 
   function applyGuiScale() {
     const modal = document.getElementById("ctrl-settings-modal");
     if (!modal) return;
     const s = Math.max(0.5, Math.min(1.5, (settings.guiScale || 100) / 100));
-    modal.style.transform = `scale(${s})`;
-    modal.style.transformOrigin = "center center";
+    modal.style.transform = s === 1 ? "" : `scale(${s})`;
+    modal.style.animation = s === 1 ? "" : "none";
   }
 
   function openSettings() {
@@ -2326,12 +2206,13 @@
     document.getElementById("ctrl-settings-overlay")?.classList.add("open");
     applyGuiScale();
   }
+
   function closeSettings() {
     settingsOpen = false;
-    listeningFor = null;
+    cancelListening();
+    saveSettings();
     document.getElementById("ctrl-settings-overlay")?.classList.remove("open");
   }
-
   // UI injections
   function injectControllerButton() {
     if (document.querySelector(".controller-settings-btn")) return;
@@ -2358,8 +2239,7 @@
     injectMenuBadges();
   }
   function injectMenuBadges() {
-    const defs =
-      controllerType === "xbox" ? getXBOX_BADGE_DEFS() : getPS_BADGE_DEFS();
+    const defs = getBadgeDefs();
     defs.forEach(({ id, badgeClass, symbol }) => {
       const el = document.getElementById(id);
       if (!el || el.querySelector(".ctrl-btn-badge")) return;
