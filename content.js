@@ -133,6 +133,8 @@
     guiScale: 100, // UI scale percentage (50–150)
     aimSensitivity: 50, // aim sensitivity
     aimSmoothing: 5, // aim smoothing
+    analogInterp: false, // smooths sticks that lock to the 4 axes
+    analogInterpStrength: 7, // 1-10
     freeLookSpeed: 5, // cursor speed
     leftDeadzone: 15, // deadzone
     rightDeadzone: 12, // deadzone
@@ -695,6 +697,25 @@
     return (val - Math.sign(val) * dz) / (1 - dz);
   }
 
+  // ANALOG INTERPOLATION
+  // cheap sticks often gate input into a cross shape, so aim snaps to the 4
+  // cardinal directions and diagonal angles are unreachable. expanding the
+  // angle away from the nearest axis brings the in-between angles back
+  function interpolateAxes(x, y) {
+    const mag = Math.hypot(x, y);
+    if (mag < 0.01) return [x, y];
+    const quarter = Math.PI / 2;
+    const raw = Math.atan2(y, x);
+    const nearest = Math.round(raw / quarter) * quarter;
+    const maxErr = Math.PI / 4;
+    const err = raw - nearest;
+    const t = Math.min(Math.abs(err) / maxErr, 1);
+    const curve = 1 - (settings.analogInterpStrength / 10) * 0.72;
+    const eased = Math.pow(t, curve) * maxErr * Math.sign(err);
+    const a = nearest + eased;
+    return [Math.cos(a) * mag, Math.sin(a) * mag];
+  }
+
   // MOUSE MODE — context-aware aiming vs free cursor
   // free mode: menu open, map open, or esc open (same as mouse mode?!)
   // aim mode: ingame, no overlays
@@ -1021,6 +1042,12 @@
       axX = leftX; axY = leftY;
     } else {
       return; // keep angle where it is
+    }
+
+    if (settings.analogInterp) {
+      const i = interpolateAxes(axX, axY);
+      axX = i[0];
+      axY = i[1];
     }
 
     const sf = 0.08 + (settings.aimSmoothing / 100) * 0.12;
@@ -1771,6 +1798,10 @@
       <div class="ctrl-section">Aiming</div>
       ${sliderRow("aimSensitivity", "Aim Sensitivity", "Distance of the aim circle from screen center", 1, 150, settings.aimSensitivity, "")}
       ${sliderRow("aimSmoothing", "Aim Smoothing", "Stick response curve", 1, 10, settings.aimSmoothing, "")}
+      ${toggleRow("analogInterp", "Analog Interpolation", "Smooths out aim that snaps to the 4 cardinal directions on cheaper controllers", settings.analogInterp)}
+      <div id="ctrl-interp-slider" style="display:${settings.analogInterp ? "block" : "none"}">
+        ${sliderRow("analogInterpStrength", "Interpolation Strength", "How strongly aim is eased away from the axes", 1, 10, settings.analogInterpStrength, "")}
+      </div>
       <div class="ctrl-section">Free Cursor</div>
       ${sliderRow("freeLookSpeed", "Cursor Speed", "Cursor speed in menus, map and pause screen", 1, 10, settings.freeLookSpeed, "")}
       <div class="ctrl-section">Deadzones</div>
@@ -1898,6 +1929,9 @@
     });
     bindSlider(overlay, "aimSmoothing", (v) => {
       settings.aimSmoothing = v;
+    });
+    bindSlider(overlay, "analogInterpStrength", (v) => {
+      settings.analogInterpStrength = v;
     });
     bindSlider(overlay, "freeLookSpeed", (v) => {
       settings.freeLookSpeed = v;
@@ -2042,6 +2076,12 @@
       case "aimWithLeft":
         settings.aimWithLeft = on;
         break;
+      case "analogInterp": {
+        settings.analogInterp = on;
+        const wrap = overlay.querySelector("#ctrl-interp-slider");
+        if (wrap) wrap.style.display = on ? "block" : "none";
+        break;
+      }
       case "aimLine":
         settings.aimLine = on;
         if (!on && aimLineEl) aimLineEl.style.display = "none";
